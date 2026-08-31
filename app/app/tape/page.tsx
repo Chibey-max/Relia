@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { creditcoinClient, addresses, explorers } from '@/lib/chain';
+import { createWalletClient, custom, encodeFunctionData } from 'viem';
+import { creditcoinClient, creditcoinTestnet, addresses, explorers } from '@/lib/chain';
 import { registryAbi, tapeAbi, STATUS_LABELS, ASSET_KINDS } from '@/lib/abi';
 
 interface Row {
@@ -21,6 +22,42 @@ export default function TapePage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState('');
+
+  /**
+   * Nothing on the tape turns red on its own. A window closing is not an
+   * event, so someone has to write the outcome — Shortfall if no payment was
+   * proven, Disputed if one was and the shop never acknowledged it.
+   * Permissionless on purpose: the buyer has every reason to call it.
+   */
+  async function settle(assetId: string, n: number) {
+    setBusy(`${assetId}-${n}`);
+    setError(null);
+    try {
+      const eth = (globalThis as { ethereum?: unknown }).ethereum;
+      if (!eth) throw new Error('No injected wallet found.');
+
+      const w = createWalletClient({ chain: creditcoinTestnet, transport: custom(eth as never) });
+      const [account] = await w.getAddresses();
+      if (!account) throw new Error('No account authorized.');
+
+      const hash = await w.sendTransaction({
+        account,
+        to: addresses.tape,
+        data: encodeFunctionData({
+          abi: tapeAbi,
+          functionName: 'settleWindow',
+          args: [assetId as `0x${string}`, n],
+        }),
+      });
+      await creditcoinClient.waitForTransactionReceipt({ hash });
+      location.reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy('');
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -77,7 +114,7 @@ export default function TapePage() {
       <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
         <thead>
           <tr style={{ textAlign: 'left', borderBottom: '2px solid #333' }}>
-            <th>Asset</th><th>Kind</th><th>Slice</th><th>Status</th><th>Window ends</th><th>Payment</th>
+            <th>Asset</th><th>Kind</th><th>Slice</th><th>Status</th><th>Window ends</th><th>Payment</th><th></th>
           </tr>
         </thead>
         <tbody>
@@ -110,6 +147,17 @@ export default function TapePage() {
                     <Link href={`/verify/${r.payTx}`}>verify</Link>
                   ) : (
                     <span style={{ color: '#999' }}>—</span>
+                  )}
+                </td>
+                <td>
+                  {label === 'Due' && Number(r.windowEnd) * 1000 < Date.now() && (
+                    <button
+                      onClick={() => settle(r.assetId, r.n)}
+                      disabled={busy !== ''}
+                      title="Write the outcome of this closed window"
+                    >
+                      {busy === `${r.assetId}-${r.n}` ? 'settling…' : 'settle'}
+                    </button>
                   )}
                 </td>
               </tr>

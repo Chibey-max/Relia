@@ -6,7 +6,7 @@
  * Deliberately thin: this is the scaffold that proves the pipeline, not the
  * product surface. The ack is a single button rather than a /shop route.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   createWalletClient,
   createPublicClient,
@@ -17,12 +17,14 @@ import {
 } from 'viem';
 import { sepolia } from 'viem/chains';
 import { addresses, explorers } from '@/lib/chain';
+import { loadListedAssets, shortId, type ListedAsset } from '@/lib/assets';
 import { paySinkAbi, shopAckAbi, erc20Abi } from '@/lib/abi';
 import { PipelineRail, type StageEvent } from '@/components/PipelineRail';
 
 const publicClient = createPublicClient({ chain: sepolia, transport: http() });
 
 export default function SendPage() {
+  const [assets, setAssets] = useState<ListedAsset[]>([]);
   const [assetId, setAssetId] = useState<string>('');
   const [n, setN] = useState<number>(1);
   const [shop, setShop] = useState<string>('');
@@ -33,6 +35,23 @@ export default function SendPage() {
   const [events, setEvents] = useState<StageEvent[]>([]);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string>('');
+
+  // Asset ids come from the chain that issued them. Pasting a raw 32-byte id
+  // from a terminal is the kind of step that goes wrong on camera.
+  useEffect(() => {
+    loadListedAssets()
+      .then(setAssets)
+      .catch((e) => setProblem(e instanceof Error ? e.message : String(e)));
+  }, []);
+
+  function selectAsset(id: string) {
+    setAssetId(id);
+    const hit = assets.find((a) => a.assetId === id);
+    if (hit) {
+      setShop(hit.shopSepolia);
+      setBuyer(hit.buyer);
+    }
+  }
 
   /**
    * The exact REL1 record that will be emitted. Showing it before signing is
@@ -142,7 +161,20 @@ export default function SendPage() {
 
       <div style={{ display: 'grid', gap: 8, maxWidth: 620, fontSize: 14 }}>
         <label>
-          Asset id
+          Asset
+          <select value={assetId} onChange={(e) => selectAsset(e.target.value)} style={input}>
+            <option value="">
+              {assets.length ? 'Select a listed asset…' : 'No assets listed yet'}
+            </option>
+            {assets.map((a) => (
+              <option key={a.assetId} value={a.assetId}>
+                {shortId(a.assetId)} — buyer {a.buyer.slice(0, 8)}…
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          …or paste an asset id
           <input value={assetId} onChange={(e) => setAssetId(e.target.value)} style={input} />
         </label>
         <label>

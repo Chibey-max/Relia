@@ -153,12 +153,14 @@ docs/
   gate-1-findings.md      what the prover exposes, and the evidence
   gate-2-constants.md     constants verified, three corrected
   sequence.md             flow + exact precompile fields read
+  demo.md                 runbook: what to show live, what to show as tests
 contracts/
   lib/                    Rel1.sol LibRLP.sol LibTxHash.sol
   sepolia/                ReliaPaySink ReliaShopAck MockUSDC
   creditcoin/             AssetRegistry ProofConsumer TitlePass ShortfallTape
   test/                   Relia.t.sol Rel1.t.sol LibTxHash.t.sol
   script/                 DeploySepolia DeployCreditcoin
+                          ListAsset RegisterShop SettleWindow
 worker/                   Node 20 + TS, stage events on stdout
 app/                      /tape /send /title /verify/[payTx]
 ```
@@ -191,6 +193,25 @@ cd worker && npm install && npm run chainkey
 
 # 3. Execution chain
 forge script contracts/script/DeployCreditcoin.s.sol --rpc-url creditcoin --broadcast
+```
+
+Then list an asset. The shop must be bound on **both** chains or nothing can
+ever be proven for it:
+
+```bash
+export SHOP_CTC=0x… SHOP_SEPOLIA=0x… BUYER=0x…
+export WINDOW_SPACING_SECONDS=300     # short windows so a demo can close one
+
+forge script contracts/script/ListAsset.s.sol --rpc-url creditcoin --broadcast
+export ASSET_ID=0x…                   # printed by the line above
+forge script contracts/script/RegisterShop.s.sol --rpc-url sepolia --broadcast
+```
+
+A closed window writes nothing on its own — `settleWindow` decides Shortfall
+or Disputed, from the `/tape` button or:
+
+```bash
+SLICE=2 forge script contracts/script/SettleWindow.s.sol --rpc-url creditcoin --broadcast
 ```
 
 Then verify the constants that could not be checked offline:
