@@ -8,3 +8,6 @@ worker/dist/
 app/.next/
 app/out/
 *.log
+app/.env.local
+app/.next/
+app/tsconfig.tsbuildinfo
