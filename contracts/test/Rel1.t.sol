@@ -107,6 +107,8 @@ contract Rel1Test is Test {
         bytes memory good = codec.encodePayment(p);
 
         bytes memory bad = good;
+        // Safe: 0x32 is a literal that fits a single byte by construction.
+        // forge-lint: disable-next-line(unsafe-typecast)
         bad[3] = bytes1(uint8(0x32)); // "REL1" -> "REL2"
 
         vm.expectRevert(abi.encodeWithSelector(Rel1.Rel1BadVersion.selector, bytes4(0x52454c32)));
@@ -199,6 +201,8 @@ contract Rel1Test is Test {
     }
 
     function test_magicIsAsciiREL1() public pure {
+        // Safe: a 4-character string literal is exactly bytes4 wide.
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(Rel1.MAGIC, bytes4("REL1"));
     }
 }

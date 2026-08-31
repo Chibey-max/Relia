@@ -106,6 +106,8 @@ library Rel1 {
         // checkable, but it is a slice index and must fit the domain.
         if (n > type(uint8).max) revert Rel1Malformed(record.length);
 
+        // Safe: the line above rejects any n outside the uint8 domain.
+        // forge-lint: disable-next-line(unsafe-typecast)
         p = Payment(assetId, uint8(n), shop, buyer, payer, amount);
     }
 
@@ -119,6 +121,8 @@ library Rel1 {
 
         if (n > type(uint8).max) revert Rel1Malformed(record.length);
 
+        // Safe: the line above rejects any n outside the uint8 domain.
+        // forge-lint: disable-next-line(unsafe-typecast)
         a = Ack(assetId, uint8(n), payTx, shop);
     }
 }
