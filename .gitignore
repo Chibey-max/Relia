@@ -1,0 +1,10 @@
+out/
+cache/
+node_modules/
+broadcast/*/dry-run/
+.env
+.env.local
+worker/dist/
+app/.next/
+app/out/
+*.log

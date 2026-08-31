@@ -1,0 +1,9 @@
+{
+  "name": "relia",
+  "private": true,
+  "license": "MIT",
+  "description": "Hire-purchase title protocol: Sepolia facts, Attestcoin proofs, Creditcoin title.",
+  "devDependencies": {
+    "solc": "0.8.28"
+  }
+}
