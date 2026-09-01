@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { ClientMotion } from '@/components/ClientMotion';
+import { WalletConnect } from '@/components/WalletConnect';
+import './globals.css';
 
 export const metadata = {
   title: 'Relia',
@@ -9,20 +12,28 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ fontFamily: 'system-ui, sans-serif', margin: 0, padding: 24, maxWidth: 900 }}>
-        <header style={{ marginBottom: 20, borderBottom: '1px solid #ddd', paddingBottom: 12 }}>
-          <strong style={{ fontSize: 18 }}>Relia</strong>
-          <nav style={{ display: 'flex', gap: 14, marginTop: 8, fontSize: 14 }}>
-            <Link href="/tape">Tape</Link>
-            <Link href="/send">Send</Link>
-            <Link href="/title">Title</Link>
-          </nav>
-          <p style={{ fontSize: 12, color: '#666', marginTop: 8, marginBottom: 0 }}>
-            Title slice N does not exist until two finalized Sepolia transactions are proven
-            together on Creditcoin. Money settles on Sepolia; Creditcoin holds title and tape.
-          </p>
-        </header>
-        {children}
+      <body>
+        <a className="skip-link" href="#main">Skip to content</a>
+        <ClientMotion />
+        <div className="app-shell">
+          <header className="site-header">
+            <div className="nav-pill">
+              <Link className="brand" href="/">
+                <span className="brand-mark">R</span>
+                <span className="brand-name">Relia</span>
+              </Link>
+              <nav className="site-nav">
+                <Link href="/tape">Tape</Link>
+                <Link href="/send">Send</Link>
+                <Link href="/title">Title</Link>
+                <Link href="/verify">Verify</Link>
+                <Link className="nav-cta" href="/send">Get started</Link>
+              </nav>
+              <WalletConnect />
+            </div>
+          </header>
+          <div id="main">{children}</div>
+        </div>
       </body>
     </html>
   );

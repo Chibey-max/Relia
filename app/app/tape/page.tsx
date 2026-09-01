@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createWalletClient, custom, encodeFunctionData } from 'viem';
-import { creditcoinClient, creditcoinTestnet, addresses, explorers } from '@/lib/chain';
+import { encodeFunctionData } from 'viem';
+import { creditcoinClient, addresses, deployBlock, explorers } from '@/lib/chain';
 import { registryAbi, tapeAbi, STATUS_LABELS, ASSET_KINDS } from '@/lib/abi';
+import { ErrorNotice } from '@/components/ErrorNotice';
+import { walletClientFor, walletChains } from '@/lib/wallet';
 
 interface Row {
   assetId: `0x${string}`;
@@ -20,7 +22,7 @@ const ZERO = `0x${'0'.repeat(64)}`;
 
 export default function TapePage() {
   const [rows, setRows] = useState<Row[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
 
@@ -28,32 +30,22 @@ export default function TapePage() {
    * Nothing on the tape turns red on its own. A window closing is not an
    * event, so someone has to write the outcome — Shortfall if no payment was
    * proven, Disputed if one was and the shop never acknowledged it.
-   * Permissionless on purpose: the buyer has every reason to call it.
+   * Permissionless on purpose: the buyer has every incentive to call it too.
    */
   async function settle(assetId: string, n: number) {
     setBusy(`${assetId}-${n}`);
     setError(null);
     try {
-      const eth = (globalThis as { ethereum?: unknown }).ethereum;
-      if (!eth) throw new Error('No injected wallet found.');
-
-      const w = createWalletClient({ chain: creditcoinTestnet, transport: custom(eth as never) });
-      const [account] = await w.getAddresses();
-      if (!account) throw new Error('No account authorized.');
-
+      const { client: w, account } = await walletClientFor(walletChains.creditcoin);
       const hash = await w.sendTransaction({
         account,
         to: addresses.tape,
-        data: encodeFunctionData({
-          abi: tapeAbi,
-          functionName: 'settleWindow',
-          args: [assetId as `0x${string}`, n],
-        }),
+        data: encodeFunctionData({ abi: tapeAbi, functionName: 'settleWindow', args: [assetId as `0x${string}`, n] }),
       });
       await creditcoinClient.waitForTransactionReceipt({ hash });
       location.reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(e);
     } finally {
       setBusy('');
     }
@@ -66,7 +58,7 @@ export default function TapePage() {
           address: addresses.registry,
           abi: registryAbi,
           eventName: 'Listed',
-          fromBlock: 'earliest',
+          fromBlock: deployBlock,
         });
 
         const out: Row[] = [];
@@ -92,84 +84,68 @@ export default function TapePage() {
         }
         setRows(out);
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(e);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  if (loading) return <p>Reading the tape from Creditcoin…</p>;
-  if (error) return <p style={{ color: '#b00020' }}>Could not read the tape: {error}</p>;
-  if (rows.length === 0) return <p>No assets listed yet.</p>;
+  if (loading) return <main><div className="empty-state">Reading the tape from Creditcoin…</div></main>;
+  if (error) return <main><ErrorNotice error={error} title="Could not read the tape" /></main>;
+  if (rows.length === 0) return <main><div className="empty-state">No assets listed yet.</div></main>;
 
   return (
     <main>
+      <div className="eyebrow"><span className="dot" />Tape</div>
       <h1>Tape</h1>
-      <p style={{ fontSize: 13, color: '#555' }}>
-        Every slice of every listed asset, as Creditcoin has it. Red rows are real and stay
-        visible — a record that only shows the good months is not worth carrying.
+      <p className="lead">
+        Every slice of every listed asset, as Creditcoin has it. Bad outcomes are real and stay visible — a record
+        that only shows the good months is not worth carrying.
       </p>
 
-      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
-        <thead>
-          <tr style={{ textAlign: 'left', borderBottom: '2px solid #333' }}>
-            <th>Asset</th><th>Kind</th><th>Slice</th><th>Status</th><th>Window ends</th><th>Payment</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => {
-            const label = STATUS_LABELS[r.status] ?? 'Unknown';
-            const bad = label === 'Shortfall' || label === 'Reclaimed';
-            const disputed = label === 'Disputed';
-            return (
-              <tr
-                key={`${r.assetId}-${r.n}`}
-                style={{
-                  borderBottom: '1px solid #eee',
-                  background: bad ? '#fff0f0' : disputed ? '#fffaf0' : undefined,
-                }}
-              >
-                <td style={{ fontFamily: 'monospace' }}>{r.assetId.slice(0, 10)}…</td>
-                <td>{ASSET_KINDS[r.kind] ?? r.kind}</td>
-                <td>{r.n}</td>
-                <td style={{ fontWeight: bad || disputed ? 700 : 400 }}>
-                  {label}
-                  {disputed && (
-                    <span style={{ fontSize: 11, display: 'block', color: '#8a5a00' }}>
-                      paid, never acknowledged — shop cannot reclaim
-                    </span>
-                  )}
-                </td>
-                <td>{new Date(Number(r.windowEnd) * 1000).toISOString().slice(0, 10)}</td>
-                <td>
-                  {r.payTx && r.payTx !== ZERO ? (
-                    <Link href={`/verify/${r.payTx}`}>verify</Link>
-                  ) : (
-                    <span style={{ color: '#999' }}>—</span>
-                  )}
-                </td>
-                <td>
-                  {label === 'Due' && Number(r.windowEnd) * 1000 < Date.now() && (
-                    <button
-                      onClick={() => settle(r.assetId, r.n)}
-                      disabled={busy !== ''}
-                      title="Write the outcome of this closed window"
-                    >
-                      {busy === `${r.assetId}-${r.n}` ? 'settling…' : 'settle'}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="screen-card" style={{ marginTop: 24 }}>
+        <div className="table-scroll" style={{ padding: 22 }}>
+          <table className="data-table">
+            <thead>
+              <tr><th>Asset</th><th>Kind</th><th>Slice</th><th>Status</th><th>Window ends</th><th>Payment</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const label = STATUS_LABELS[r.status] ?? 'Unknown';
+                const rowClass = label === 'Shortfall' || label === 'Reclaimed' ? 'row-shortfall' : label === 'Disputed' ? 'row-disputed' : '';
+                return (
+                  <tr key={`${r.assetId}-${r.n}`} className={rowClass}>
+                    <td data-label="Asset" className="mono">{r.assetId.slice(0, 10)}…</td>
+                    <td data-label="Kind">{ASSET_KINDS[r.kind] ?? r.kind}</td>
+                    <td data-label="Slice">{r.n}</td>
+                    <td data-label="Status">
+                      <span className={`status-badge status-${label.toLowerCase()}`}>
+                        {label === 'Live' ? '✓' : label === 'Disputed' ? '!' : label === 'Shortfall' ? '✕' : label === 'Reclaimed' ? '↩' : '○'} {label}
+                      </span>
+                      {label === 'Disputed' && <div className="aside-note" style={{ marginTop: 6 }}>paid, never acknowledged — shop cannot reclaim</div>}
+                    </td>
+                    <td data-label="Window ends">{new Date(Number(r.windowEnd) * 1000).toISOString().slice(0, 10)}</td>
+                    <td data-label="Payment">
+                      {r.payTx && r.payTx !== ZERO ? <Link href={`/verify/${r.payTx}`}>verify</Link> : <span className="muted-text">—</span>}
+                    </td>
+                    <td data-label="Action">
+                      {label === 'Due' && Number(r.windowEnd) * 1000 < Date.now() && (
+                        <button className="secondary" onClick={() => settle(r.assetId, r.n)} disabled={busy !== ''}>
+                          {busy === `${r.assetId}-${r.n}` ? 'settling…' : 'Settle'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-      <p style={{ fontSize: 12, marginTop: 16 }}>
-        <a href={explorers.creditcoinAddress(addresses.tape)} target="_blank" rel="noreferrer">
-          ShortfallTape on Blockscout
-        </a>
+      <p className="aside-note" style={{ marginTop: 16 }}>
+        <a href={explorers.creditcoinAddress(addresses.tape)} target="_blank" rel="noreferrer">ShortfallTape on Blockscout</a>
       </p>
     </main>
   );

@@ -32,6 +32,10 @@ export const creditcoinClient = createPublicClient({
 
 export const sepoliaChain = sepolia;
 
+export const deployBlock: bigint | 'earliest' = process.env.NEXT_PUBLIC_CTC_DEPLOY_BLOCK
+  ? BigInt(process.env.NEXT_PUBLIC_CTC_DEPLOY_BLOCK)
+  : 'earliest';
+
 export const addresses = {
   registry: env('NEXT_PUBLIC_CTC_ASSET_REGISTRY') as `0x${string}`,
   tape: env('NEXT_PUBLIC_CTC_SHORTFALL_TAPE') as `0x${string}`,
