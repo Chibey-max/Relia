@@ -14,6 +14,12 @@ export interface ConnectedWallet {
   chainId: number;
 }
 
+export type WalletActivity = 'opening' | 'switching' | 'connected' | 'idle';
+
+function broadcastWalletActivity(activity: WalletActivity) {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent<WalletActivity>('relia:wallet-activity', { detail: activity }));
+}
+
 export function getInjectedProvider(): InjectedProvider | null {
   if (typeof window === 'undefined') return null;
   const provider = (window as { ethereum?: InjectedProvider }).ethereum;
@@ -52,6 +58,23 @@ export async function connectWallet(): Promise<ConnectedWallet> {
   return { account, chainId: Number(chainId) };
 }
 
+export async function disconnectWallet(): Promise<void> {
+  const provider = getInjectedProvider();
+  if (!provider) throw new Error('No injected wallet is available to disconnect.');
+  try {
+    await provider.request({
+      method: 'wallet_revokePermissions',
+      params: [{ eth_accounts: {} }],
+    });
+  } catch (error) {
+    const code = typeof error === 'object' && error !== null && 'code' in error
+      ? Number((error as { code: unknown }).code)
+      : undefined;
+    if (code === 4001) throw error;
+    throw new Error('This wallet does not support disconnecting from the site. Use its connected-sites menu to remove Relia.');
+  }
+}
+
 export async function ensureChain(chain: Chain): Promise<void> {
   const provider = getInjectedProvider();
   if (!provider) {
@@ -83,17 +106,28 @@ export async function ensureChain(chain: Chain): Promise<void> {
   }
 }
 
-export async function walletClientFor(chain: Chain) {
-  await connectWallet();
-  await ensureChain(chain);
-  const provider = getInjectedProvider();
-  if (!provider) throw new Error('Wallet disconnected.');
+export async function walletClientFor(chain: Chain, onActivity?: (activity: WalletActivity) => void) {
+  try {
+    broadcastWalletActivity('opening');
+    onActivity?.('opening');
+    await connectWallet();
+    broadcastWalletActivity('switching');
+    onActivity?.('switching');
+    await ensureChain(chain);
+    const provider = getInjectedProvider();
+    if (!provider) throw new Error('Wallet disconnected.');
 
-  const client = createWalletClient({ chain, transport: custom(provider as never) });
-  const [account] = await client.getAddresses();
-  if (!account) throw new Error('No wallet account was authorized.');
-
-  return { client, account };
+    const client = createWalletClient({ chain, transport: custom(provider as never) });
+    const [account] = await client.getAddresses();
+    if (!account) throw new Error('No wallet account was authorized.');
+    broadcastWalletActivity('connected');
+    onActivity?.('connected');
+    return { client, account };
+  } catch (error) {
+    broadcastWalletActivity('idle');
+    onActivity?.('idle');
+    throw error;
+  }
 }
 
 export const walletChains = {

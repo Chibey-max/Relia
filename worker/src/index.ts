@@ -19,6 +19,7 @@ import { PAY_SINK_ABI, SHOP_ACK_ABI, PROOF_CONSUMER_ABI } from './abi.js';
 import { resolveSourceChainKey } from './chainkey.js';
 import { decodeRefusal } from './refusals.js';
 import { failure, log, stage } from './stages.js';
+import { startProofStatusServer } from './status.js';
 
 interface Seen {
   txHash: string;
@@ -39,6 +40,8 @@ const pairs = new Map<string, Pair>();
 const keyOf = (assetId: string, n: number): string => `${assetId.toLowerCase()}:${n}`;
 
 async function main(): Promise<void> {
+  startProofStatusServer(config.statusPort, config.statusOrigin);
+  log(`read-only proof status http://0.0.0.0:${config.statusPort}`);
   const sepolia = new JsonRpcProvider(config.sepoliaRpc);
   const creditcoin = new JsonRpcProvider(config.creditcoinRpc);
   const wallet = new Wallet(config.workerKey, creditcoin);

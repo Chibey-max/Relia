@@ -6,6 +6,7 @@ broadcast/*/dry-run/
 .env.local
 worker/dist/
 app/.next/
+app/.next-*/
 app/out/
 *.log
 app/.env.local

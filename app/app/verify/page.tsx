@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatUnits } from 'viem';
 import { consumerAbi } from '@/lib/abi';
 import { addresses, creditcoinClient, deployBlock, explorers } from '@/lib/chain';
-import { shortId } from '@/lib/assets';
 import { ErrorNotice } from '@/components/ErrorNotice';
+import { LoadingMessage, TableSkeleton } from '@/components/LoadingUI';
+import { useLoadingTiming } from '@/lib/useLoadingTiming';
+import { TableIdentifier } from '@/components/TableIdentifier';
+import { DataEmptyState } from '@/components/ui';
 
 interface ReceiptRow {
   assetId: string;
@@ -24,9 +26,16 @@ export default function VerifyIndexPage() {
   const [payTx, setPayTx] = useState('');
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [formError, setFormError] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
+  const timing = useLoadingTiming(loading);
+  const hashInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
     (async () => {
       try {
         const events = await creditcoinClient.getContractEvents({
@@ -36,6 +45,7 @@ export default function VerifyIndexPage() {
           fromBlock: deployBlock,
         });
 
+        if (cancelled) return;
         setReceipts(events.reverse().map((event) => ({
           assetId: String(event.args.assetId),
           n: Number(event.args.n),
@@ -46,12 +56,13 @@ export default function VerifyIndexPage() {
           creditcoinTx: event.transactionHash,
         })));
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        if (!cancelled) setLoadError(e);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, []);
+    return () => { cancelled = true; };
+  }, [retryKey]);
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -60,72 +71,80 @@ export default function VerifyIndexPage() {
       router.push(`/verify/${trimmed}`);
       return;
     }
-    setError('Enter a valid 32-byte Sepolia payment transaction hash.');
+    setFormError('Enter a valid 32-byte Sepolia payment transaction hash.');
+    hashInputRef.current?.focus();
   }
 
   return (
-    <main>
-      <section className="intro-band">
-        <div className="hero-panel">
+    <main className="task-main">
+      <section className="intro-band verify-intro" data-reveal>
+        <div className="hero-panel verify-hero">
           <div className="eyebrow"><span className="dot" /> Public receipt lookup</div>
-          <h1>Verify any proven installment with only its payment hash.</h1>
+          <h1>Check a payment without trusting a screenshot.</h1>
           <p className="lead">
-            Receipts are read straight from Creditcoin. No wallet, no account, no backend.
+            Enter its Sepolia transaction hash. Relia reads the corresponding receipt straight from Creditcoin—no wallet, account, or backend.
           </p>
         </div>
-        <aside className="panel soft">
-          <div className="eyebrow"><span className="dot" /> Search</div>
+        <aside className="panel soft lookup-card">
+          <div className="lookup-card-heading">
+            <div className="eyebrow"><span className="dot" /> Public search</div>
+            <h2>Find one receipt.</h2>
+            <p>Use the payment transaction from Sepolia. No wallet connection is needed.</p>
+          </div>
           <form onSubmit={submit}>
             <label className="field full">
               Sepolia payment tx
               <input
+                ref={hashInputRef}
                 placeholder="0x..."
+                aria-invalid={Boolean(formError)}
+                aria-describedby={formError ? 'verify-hash-help verify-hash-error' : 'verify-hash-help'}
                 value={payTx}
-                onChange={(event) => setPayTx(event.target.value)}
+                onChange={(event) => { setPayTx(event.target.value); setFormError(''); }}
               />
             </label>
+            <p className="field-help" id="verify-hash-help">Paste the complete 32-byte payment hash.</p>
             <div className="toolbar">
-              <button type="submit">Open receipt</button>
+              <button type="submit">Check payment</button>
             </div>
           </form>
-          {error && (
-            <div style={{ marginTop: 14 }}>
-              <ErrorNotice error={error} />
+          {formError && (
+            <div className="notice-slot" id="verify-hash-error">
+              <ErrorNotice error={formError} />
             </div>
           )}
         </aside>
       </section>
 
-      <section className="screen-card">
-        <div className="screen-head">
-          <div className="window-dots"><i /><i /><i /></div>
-          <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>Latest receipts</span>
-        </div>
-        <div className="table-scroll" style={{ padding: 22 }}>
+      <section className="screen-card data-surface" aria-busy={loading} aria-labelledby="latest-receipts-title" data-reveal>
+        <div className="data-surface-head"><div><span className="mini-title">PUBLIC INDEX</span><h2 id="latest-receipts-title">Latest proven receipts</h2></div><span className="status-badge status-live">● CREDITCOIN</span></div>
+        <div className="table-scroll data-surface-scroll">
           {loading ? (
-            <div className="empty-state">Reading receipt events from Creditcoin...</div>
+            <div className="loading-data-region">
+              {timing.show && <><LoadingMessage slow={timing.slow} network="Creditcoin">Reading public receipt events from Creditcoin…</LoadingMessage><TableSkeleton rows={5} columns={6} labels={['Asset', 'Slice', 'Amount', 'Payer', 'Payment', 'Creditcoin']} /></>}
+              {timing.prolonged && <button className="secondary loading-retry" onClick={() => setRetryKey((key) => key + 1)}>Retry public read</button>}
+            </div>
+          ) : loadError != null ? (
+            <div className="loading-error-region"><ErrorNotice error={loadError} title="Could not load recent receipts" onRetry={() => setRetryKey((key) => key + 1)} /></div>
           ) : receipts.length === 0 ? (
-            <div className="empty-state">No proven receipts found yet.</div>
+            <DataEmptyState symbol="◎" title="No proven receipts yet" body="The public index is working, but Creditcoin has not emitted an installment receipt in the configured range. You can still paste a known payment hash above." />
           ) : (
             <table className="data-table">
+              <caption className="sr-only">Latest proven installment receipts on Creditcoin</caption>
               <thead>
                 <tr>
-                  <th>Asset</th><th>Slice</th><th>Amount</th><th>Payer</th><th>Payment</th><th>Creditcoin</th>
+                  <th scope="col">Asset</th><th scope="col">Slice</th><th scope="col">Amount</th><th scope="col">Payer</th><th scope="col">Payment</th><th scope="col">Creditcoin</th>
                 </tr>
               </thead>
               <tbody>
                 {receipts.map((receipt) => (
                   <tr key={`${receipt.payTx}-${receipt.n}`}>
-                    <td data-label="Asset" className="mono">{shortId(receipt.assetId)}</td>
+                    <td data-label="Asset"><TableIdentifier value={receipt.assetId} copyLabel="Copy asset ID" /></td>
                     <td data-label="Slice">{receipt.n} of 12</td>
                     <td data-label="Amount">{Number(formatUnits(receipt.amount, 6)).toFixed(2)} USDC</td>
-                    <td data-label="Payer" className="mono">{receipt.payer.slice(0, 10)}...</td>
-                    <td data-label="Payment"><Link href={`/verify/${receipt.payTx}`}>open</Link></td>
-                    <td data-label="Creditcoin">
-                      <a href={explorers.creditcoinTx(receipt.creditcoinTx)} target="_blank" rel="noreferrer">
-                        tx
-                      </a>
-                    </td>
+                    <td data-label="Payer"><TableIdentifier value={receipt.payer} copyLabel="Copy payer" /></td>
+                    <td data-label="Payment"><TableIdentifier value={receipt.payTx} copyLabel="Copy payment" href={`/verify/${receipt.payTx}`} actionLabel="Receipt" /></td>
+                    <td data-label="Creditcoin"><TableIdentifier value={receipt.creditcoinTx} copyLabel="Copy proof tx" href={explorers.creditcoinTx(receipt.creditcoinTx)} actionLabel="Explorer" external /></td>
                   </tr>
                 ))}
               </tbody>

@@ -59,14 +59,14 @@ export function PipelineRail({ events }: { events: StageEvent[] }) {
 
   return (
     <div>
-      <div className="mono muted-text" style={{ fontSize: 12, marginBottom: 10 }}>{done} of {STAGES.length} stages</div>
-      <ol className="pipeline" style={{ listStyle: 'none' }}>
-        {STAGES.map((s, i) => {
+      <div className="mono muted-text pipeline-count">{done} of {STAGES.length} stages</div>
+      <ol className="pipeline">
+        {STAGES.map((s, index) => {
           const hit = byStage.get(s.name);
-          const state = hit ? (hit.error ? 'failed' : 'done') : 'pending';
+          const state = hit ? (hit.error ? 'failed' : 'done') : (!failed && index === done ? 'active' : 'pending');
           return (
-            <li key={s.name} className={`pipeline-item ${state}`} style={{ opacity: state === 'pending' ? 0.6 : 1 }}>
-              <span className="pipeline-marker">{state === 'done' ? '✓' : state === 'failed' ? '✕' : i + 1}</span>
+            <li key={s.name} className={`pipeline-item ${state}`} aria-current={state === 'active' ? 'step' : undefined}>
+              <span className="pipeline-marker">{state === 'done' ? '✓' : state === 'failed' ? '✕' : String(index + 1).padStart(2, '0')}</span>
               <div>
                 <div className="pipeline-label">
                   {s.label}
@@ -80,7 +80,7 @@ export function PipelineRail({ events }: { events: StageEvent[] }) {
       </ol>
 
       {failed?.rule && (
-        <div style={{ marginTop: 16 }}>
+        <div className="pipeline-refusal">
           <RefusalNotice rule={failed.rule} sentence={failed.error ?? ''} />
         </div>
       )}
@@ -97,8 +97,8 @@ export function RefusalNotice({ rule, sentence }: { rule: string; sentence: stri
   return (
     <div className="notice error">
       <span className="status-badge status-shortfall">✕ {rule}</span>
-      <p style={{ margin: '12px 0 0' }}>{sentence}</p>
-      <p className="aside-note" style={{ margin: '8px 0 0' }}>
+      <p className="notice-message">{sentence}</p>
+      <p className="aside-note notice-recovery">
         This is a rule the contract enforces on-chain, not a client-side check.
       </p>
     </div>

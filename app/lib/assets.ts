@@ -1,6 +1,6 @@
 'use client';
 
-import { creditcoinClient, addresses } from './chain';
+import { creditcoinClient, addresses, configuredAssetId, deployBlock } from './chain';
 import { registryAbi } from './abi';
 
 export interface ListedAsset {
@@ -20,11 +20,32 @@ export interface ListedAsset {
  * a terminal — the ids come from the chain that issued them.
  */
 export async function loadListedAssets(): Promise<ListedAsset[]> {
+  if (/^0x[0-9a-fA-F]{64}$/.test(configuredAssetId)) {
+    const asset = await creditcoinClient.readContract({
+      address: addresses.registry,
+      abi: registryAbi,
+      functionName: 'getAsset',
+      args: [configuredAssetId as `0x${string}`],
+    });
+
+    if (asset.exists) {
+      return [{
+        assetId: configuredAssetId as `0x${string}`,
+        kind: Number(asset.kind),
+        buyer: asset.buyer,
+        shopSepolia: asset.shopSepolia,
+        shopCtc: asset.shopCtc,
+        installment: asset.installment,
+        windows: [],
+      }];
+    }
+  }
+
   const events = await creditcoinClient.getContractEvents({
     address: addresses.registry,
     abi: registryAbi,
     eventName: 'Listed',
-    fromBlock: 'earliest',
+    fromBlock: deployBlock,
   });
 
   return events.map((e) => ({
