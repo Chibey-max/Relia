@@ -39,6 +39,8 @@ export const config = {
   fromBlock: Number(optional('WORKER_FROM_BLOCK', '0')),
   pollIntervalMs: Number(optional('WORKER_POLL_INTERVAL_MS', '12000')),
   attestationTimeoutMs: Number(optional('ATTESTATION_TIMEOUT_MS', '900000')),
+  statusPort: Number(optional('WORKER_STATUS_PORT', '8787')),
+  statusOrigin: optional('WORKER_STATUS_ORIGIN', 'http://localhost:3000'),
 };
 
 export type Config = typeof config;

@@ -1,5 +1,20 @@
 export const tapeAbi = [
   {
+    type: 'error',
+    name: 'ReclaimBlockedLive',
+    inputs: [{ name: 'assetId', type: 'bytes32' }, { name: 'n', type: 'uint8' }],
+  },
+  {
+    type: 'error',
+    name: 'ReclaimBlockedDisputed',
+    inputs: [{ name: 'assetId', type: 'bytes32' }, { name: 'n', type: 'uint8' }, { name: 'payTx', type: 'bytes32' }],
+  },
+  {
+    type: 'error',
+    name: 'NotReclaimable',
+    inputs: [{ name: 'assetId', type: 'bytes32' }, { name: 'n', type: 'uint8' }, { name: 'status', type: 'uint8' }],
+  },
+  {
     type: 'function',
     name: 'sliceOf',
     stateMutability: 'view',
@@ -19,7 +34,62 @@ export const tapeAbi = [
   },
   {
     type: 'function',
+    name: 'entryCount',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'entryAt',
+    stateMutability: 'view',
+    inputs: [{ name: 'i', type: 'uint256' }],
+    outputs: [{
+      type: 'tuple',
+      components: [
+        { name: 'assetId', type: 'bytes32' },
+        { name: 'n', type: 'uint8' },
+        { name: 'status', type: 'uint8' },
+        { name: 'at', type: 'uint64' },
+        { name: 'payTx', type: 'bytes32' },
+        { name: 'ackTx', type: 'bytes32' },
+      ],
+    }],
+  },
+  {
+    type: 'function',
+    name: 'entryCountOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'assetId', type: 'bytes32' }],
+    outputs: [{ type: 'uint256' }],
+  },
+  {
+    type: 'function',
+    name: 'entryOfAt',
+    stateMutability: 'view',
+    inputs: [{ name: 'assetId', type: 'bytes32' }, { name: 'i', type: 'uint256' }],
+    outputs: [{
+      type: 'tuple',
+      components: [
+        { name: 'assetId', type: 'bytes32' },
+        { name: 'n', type: 'uint8' },
+        { name: 'status', type: 'uint8' },
+        { name: 'at', type: 'uint64' },
+        { name: 'payTx', type: 'bytes32' },
+        { name: 'ackTx', type: 'bytes32' },
+      ],
+    }],
+  },
+  {
+    type: 'function',
     name: 'settleWindow',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'assetId', type: 'bytes32' }, { name: 'n', type: 'uint8' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'reclaim',
     stateMutability: 'nonpayable',
     inputs: [{ name: 'assetId', type: 'bytes32' }, { name: 'n', type: 'uint8' }],
     outputs: [],
@@ -27,6 +97,27 @@ export const tapeAbi = [
 ] as const;
 
 export const registryAbi = [
+  {
+    type: 'function',
+    name: 'list',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'assetKind', type: 'uint8' },
+      { name: 'installment', type: 'uint256' },
+      { name: 'windows', type: 'uint64[12]' },
+      { name: 'shopCtc', type: 'address' },
+      { name: 'shopSepolia', type: 'address' },
+      { name: 'buyer', type: 'address' },
+    ],
+    outputs: [{ name: 'assetId', type: 'bytes32' }],
+  },
+  {
+    type: 'function',
+    name: 'exists',
+    stateMutability: 'view',
+    inputs: [{ name: 'assetId', type: 'bytes32' }],
+    outputs: [{ type: 'bool' }],
+  },
   {
     type: 'function',
     name: 'getAsset',
@@ -45,6 +136,13 @@ export const registryAbi = [
     }],
   },
   {
+    type: 'function',
+    name: 'allWindows',
+    stateMutability: 'view',
+    inputs: [{ name: 'assetId', type: 'bytes32' }],
+    outputs: [{ type: 'uint64[12]' }],
+  },
+  {
     type: 'event',
     name: 'Listed',
     inputs: [
@@ -60,6 +158,18 @@ export const registryAbi = [
 ] as const;
 
 export const titlePassAbi = [
+  {
+    type: 'error',
+    name: 'Soulbound',
+    inputs: [{ name: 'tokenId', type: 'uint256' }, { name: 'slicesFilled', type: 'uint8' }],
+  },
+  {
+    type: 'function',
+    name: 'ownerOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ type: 'address' }],
+  },
   {
     type: 'function',
     name: 'isSliceLive',
@@ -80,6 +190,48 @@ export const titlePassAbi = [
     stateMutability: 'view',
     inputs: [{ name: 'assetId', type: 'bytes32' }],
     outputs: [{ type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'safeTransferFrom',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'from', type: 'address' }, { name: 'to', type: 'address' }, { name: 'tokenId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'getApproved',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ type: 'address' }],
+  },
+  {
+    type: 'function',
+    name: 'isApprovedForAll',
+    stateMutability: 'view',
+    inputs: [{ name: 'owner', type: 'address' }, { name: 'operator', type: 'address' }],
+    outputs: [{ type: 'bool' }],
+  },
+  {
+    type: 'function',
+    name: 'tokenURI',
+    stateMutability: 'view',
+    inputs: [{ name: 'tokenId', type: 'uint256' }],
+    outputs: [{ type: 'string' }],
+  },
+  {
+    type: 'function',
+    name: 'approve',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'to', type: 'address' }, { name: 'tokenId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'setApprovalForAll',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'operator', type: 'address' }, { name: 'approved', type: 'bool' }],
+    outputs: [],
   },
 ] as const;
 
@@ -127,6 +279,20 @@ export const paySinkAbi = [
 export const shopAckAbi = [
   {
     type: 'function',
+    name: 'shopOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'assetId', type: 'bytes32' }],
+    outputs: [{ type: 'address' }],
+  },
+  {
+    type: 'function',
+    name: 'registerShop',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'assetId', type: 'bytes32' }, { name: 'shop', type: 'address' }],
+    outputs: [],
+  },
+  {
+    type: 'function',
     name: 'ack',
     stateMutability: 'nonpayable',
     inputs: [
@@ -135,6 +301,14 @@ export const shopAckAbi = [
       { name: 'payTx', type: 'bytes32' },
     ],
     outputs: [],
+  },
+  {
+    type: 'event',
+    name: 'ShopRegistered',
+    inputs: [
+      { name: 'assetId', type: 'bytes32', indexed: true },
+      { name: 'shop', type: 'address', indexed: true },
+    ],
   },
 ] as const;
 

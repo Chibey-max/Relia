@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
+import type { Viewport } from 'next';
 import Link from 'next/link';
 import { ClientMotion } from '@/components/ClientMotion';
 import { WalletConnect } from '@/components/WalletConnect';
+import { SiteNav } from '@/components/SiteNav';
 import './globals.css';
 
 export const metadata = {
@@ -9,11 +11,28 @@ export const metadata = {
   description: 'Hire-purchase title, proven across chains.',
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" />
+      </head>
       <body>
         <a className="skip-link" href="#main">Skip to content</a>
+        <noscript>
+          <div className="no-script-notice">
+            <strong>JavaScript is off.</strong>{' '}
+            The public explanations remain readable, but live chain lookups and wallet actions need JavaScript in this prototype.
+          </div>
+        </noscript>
         <ClientMotion />
         <div className="app-shell">
           <header className="site-header">
@@ -22,17 +41,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <span className="brand-mark">R</span>
                 <span className="brand-name">Relia</span>
               </Link>
-              <nav className="site-nav">
-                <Link href="/tape">Tape</Link>
-                <Link href="/send">Send</Link>
-                <Link href="/title">Title</Link>
-                <Link href="/verify">Verify</Link>
-                <Link className="nav-cta" href="/send">Get started</Link>
-              </nav>
+              <SiteNav />
               <WalletConnect />
             </div>
           </header>
-          <div id="main">{children}</div>
+          <div id="main" tabIndex={-1}>{children}</div>
         </div>
       </body>
     </html>

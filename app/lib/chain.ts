@@ -35,7 +35,26 @@ export const creditcoinClient = createPublicClient({
   transport: http(),
 });
 
-export const sepoliaChain = sepolia;
+const sepoliaRpc = process.env.NEXT_PUBLIC_SEPOLIA_RPC ?? sepolia.rpcUrls.default.http[0];
+
+export const sepoliaChain = defineChain({
+  ...sepolia,
+  rpcUrls: {
+    default: { http: [sepoliaRpc] },
+    public: { http: [sepoliaRpc] },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Etherscan',
+      url: process.env.NEXT_PUBLIC_SEPOLIA_EXPLORER ?? 'https://sepolia.etherscan.io',
+    },
+  },
+});
+
+export const sepoliaClient = createPublicClient({
+  chain: sepoliaChain,
+  transport: http(sepoliaRpc),
+});
 
 export const deployBlock: bigint | 'earliest' = process.env.NEXT_PUBLIC_CTC_DEPLOY_BLOCK
   ? BigInt(process.env.NEXT_PUBLIC_CTC_DEPLOY_BLOCK)
@@ -51,11 +70,27 @@ export const addresses = {
   shopAck: (process.env.NEXT_PUBLIC_SEPOLIA_SHOP_ACK ?? '') as `0x${string}`,
 };
 
+export function isConfiguredContractAddress(value: string): value is `0x${string}` {
+  return /^0x[0-9a-fA-F]{40}$/.test(value) && !/^0x0{40}$/i.test(value);
+}
+
+const requiredContractAddresses = Object.entries(addresses);
+
+export const contractConfiguration = {
+  ready: requiredContractAddresses.every(([, value]) => isConfiguredContractAddress(value)),
+  creditcoinReady: [addresses.registry, addresses.tape, addresses.titlePass, addresses.consumer].every(isConfiguredContractAddress),
+  sepoliaReady: [addresses.usdc, addresses.paySink, addresses.shopAck].every(isConfiguredContractAddress),
+  missing: requiredContractAddresses.filter(([, value]) => !isConfiguredContractAddress(value)).map(([name]) => name),
+} as const;
+
+export const configuredAssetId = (process.env.NEXT_PUBLIC_ASSET_ID ?? '') as `0x${string}` | '';
+
 const sepoliaExplorer = process.env.NEXT_PUBLIC_SEPOLIA_EXPLORER ?? 'https://sepolia.etherscan.io';
 const creditcoinExplorer = process.env.NEXT_PUBLIC_CREDITCOIN_EXPLORER ?? 'https://creditcoin-testnet.blockscout.com';
 
 export const explorers = {
   sepoliaTx: (h: string) => `${sepoliaExplorer}/tx/${h}`,
+  sepoliaAddress: (a: string) => `${sepoliaExplorer}/address/${a}`,
   creditcoinTx: (h: string) => `${creditcoinExplorer}/tx/${h}`,
   creditcoinAddress: (a: string) => `${creditcoinExplorer}/address/${a}`,
 };

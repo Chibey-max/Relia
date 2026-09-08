@@ -1,50 +1,62 @@
 'use client';
 
-import { useState } from 'react';
-import { explainError, type UiError } from '@/lib/errors';
+import { useEffect, useRef, useState } from 'react';
+import { explainError } from '@/lib/errors';
+import { Button, Notice } from '@/components/ui';
 
 export function ErrorNotice({
   error,
   title,
+  recovery,
   onRetry,
 }: {
   error: unknown;
   title?: string;
+  recovery?: string;
   onRetry?: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const resetTimerRef = useRef<number | undefined>(undefined);
+  const noticeRef = useRef<HTMLDivElement>(null);
   const detail = explainError(error, title);
   const raw = error instanceof Error ? error.message : String(error);
+
+  useEffect(() => () => {
+    if (resetTimerRef.current !== undefined) window.clearTimeout(resetTimerRef.current);
+  }, []);
+
+  useEffect(() => { noticeRef.current?.focus(); }, [raw]);
+
+  function resetCopyStatus(delay: number) {
+    if (resetTimerRef.current !== undefined) window.clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = window.setTimeout(() => setCopyStatus('idle'), delay);
+  }
 
   async function copyDetail() {
     try {
       await navigator.clipboard?.writeText(raw);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1400);
+      setCopyStatus('copied');
+      resetCopyStatus(1400);
     } catch {
-      setCopied(false);
+      setCopyStatus('failed');
+      resetCopyStatus(2400);
     }
   }
 
-  return (
-    <div className={`notice ${detail.tone}`} role="alert" aria-live="polite">
-      <ErrorBody detail={detail} />
-      <div className="notice-actions">
-        {onRetry && <button className="secondary" onClick={onRetry}>Try again</button>}
-        <button className="secondary" onClick={copyDetail}>{copied ? 'Copied' : 'Copy detail'}</button>
-      </div>
-    </div>
-  );
-}
-
-function ErrorBody({ detail }: { detail: UiError }) {
-  return (
-    <>
-      <span className={`status-badge ${detail.tone === 'warn' ? 'status-disputed' : 'status-shortfall'}`}>
-        {detail.title}
-      </span>
-      <p style={{ margin: '12px 0 0' }}>{detail.message}</p>
-      <p className="aside-note" style={{ margin: '8px 0 0' }}>{detail.action}</p>
-    </>
-  );
+  return <div ref={noticeRef} className="error-focus-target" tabIndex={-1}>
+    <Notice
+      tone={detail.tone === 'warn' ? 'disputed' : 'shortfall'}
+      title={detail.title}
+      consequence={detail.message}
+      recovery={recovery ?? detail.action}
+      technicalDetails={<code>{raw}</code>}
+      actions={<>
+        {onRetry && <Button variant="secondary" size="compact" onClick={onRetry}>Try again</Button>}
+        <Button variant="quiet" size="compact" onClick={copyDetail} aria-label="Copy technical error detail">{copyStatus === 'copied' ? 'Copied' : copyStatus === 'failed' ? 'Copy failed' : 'Copy detail'}</Button>
+        <span className="sr-announcement" role="status" aria-live="polite" aria-atomic="true">
+          {copyStatus === 'copied' ? 'Technical error detail copied to the clipboard.' : copyStatus === 'failed' ? 'The technical error detail could not be copied. Select it and copy it manually.' : ''}
+        </span>
+      </>}
+    />
+  </div>;
 }

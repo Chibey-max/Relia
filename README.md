@@ -228,14 +228,19 @@ cd worker && npm install && npm run dev
 ```
 
 Emits JSON-line stage events on stdout (`sepolia_mined`, `block_finalized`,
-`attested`, `ack_located`, `proof_generated`, `verified`, `title_ticked`), so
-the frontend rail can show the attestation wait as real hashes resolving rather
-than a spinner. Human logs go to stderr.
+`attested`, `ack_located`, `proof_generated`, `verified`, `title_ticked`) and
+mirrors the latest bounded set at the read-only `GET /status` endpoint on port
+8787. The frontend can therefore show the attestation wait as real hashes
+resolving rather than a spinner. Human logs go to stderr. Configure
+`WORKER_STATUS_ORIGIN` and `NEXT_PUBLIC_PROOF_STATUS_URL` when the two processes
+do not use the default local origins.
 
 The worker has **no custody**. It holds no user funds, has no authority over
 anyone's money, and cannot cause a payment or an acknowledgement. Its only
 privilege is paying gas. If it disappears, every fact is still on Sepolia and
-anyone can prove it.
+anyone can prove it. `ProofConsumer.consume(...)` and
+`proveShortfallDispute(...)` remain infrastructure operations; the status API
+accepts no writes and the browser exposes no proof-submission control.
 
 ### Frontend
 

@@ -40,8 +40,19 @@ export interface StageError {
   detail?: Record<string, string | number | boolean | null>;
 }
 
+export type PublicStageEvent = StageEvent | StageError;
+
+const listeners = new Set<(event: PublicStageEvent) => void>();
+
+/** Allows read-only observers to mirror public progress without gaining access to the signer. */
+export function subscribeToStageEvents(listener: (event: PublicStageEvent) => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 export function emit(event: StageEvent | StageError): void {
   process.stdout.write(`${JSON.stringify(event)}\n`);
+  for (const listener of listeners) listener(event);
 }
 
 export function stage(
