@@ -19,10 +19,14 @@ export const config = {
   shopAck: required('SEPOLIA_SHOP_ACK'),
 
   creditcoinRpc: required('CREDITCOIN_RPC_URL'),
+  creditcoinChainId: Number(optional('CREDITCOIN_CHAIN_ID', '102031')),
   proofBuilderUrl: optional(
     'CREDITCOIN_PROOF_BUILDER_URL',
     'https://prover.cc3-testnet.creditcoin.network',
   ),
+  proofBuilderTimeoutMs: Number(optional('CREDITCOIN_PROOF_BUILDER_TIMEOUT_MS', '120000')),
+  proofBuilderTransport: optional('CREDITCOIN_PROOF_BUILDER_TRANSPORT', 'curl'),
+  consumeGasLimit: BigInt(optional('CREDITCOIN_CONSUME_GAS_LIMIT', '8000000')),
   chainInfoPrecompile: optional(
     'CREDITCOIN_CHAIN_INFO',
     '0x0000000000000000000000000000000000000fD3',
@@ -37,8 +41,10 @@ export const config = {
   workerKey: required('WORKER_PRIVATE_KEY'),
 
   fromBlock: Number(optional('WORKER_FROM_BLOCK', '0')),
+  scanChunkBlocks: Number(optional('WORKER_SCAN_CHUNK_BLOCKS', '500')),
   pollIntervalMs: Number(optional('WORKER_POLL_INTERVAL_MS', '12000')),
   attestationTimeoutMs: Number(optional('ATTESTATION_TIMEOUT_MS', '900000')),
+  statePath: optional('WORKER_STATE_PATH', '.relia-worker-state.json'),
   statusPort: Number(optional('WORKER_STATUS_PORT', '8787')),
   statusOrigin: optional('WORKER_STATUS_ORIGIN', 'http://localhost:3000'),
 };

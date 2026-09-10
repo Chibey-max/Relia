@@ -18,6 +18,7 @@ import { TapeHistory } from '@/components/TapeHistory';
 import { SignerContext } from '@/components/SignerContext';
 import { useWalletSnapshot } from '@/lib/useWalletSnapshot';
 import { ConfirmWriteAction } from '@/components/ConfirmWriteAction';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 type WindowState = 'upcoming' | 'open' | 'expired' | 'resolved';
 
@@ -220,16 +221,16 @@ export default function AssetDetailPage() {
         <div>
           <div className="eyebrow"><span className="dot" />Canonical asset record</div>
           <h1>{asset ? ASSET_KINDS[asset.kind] ?? `Asset ${asset.kind}` : 'One title. Every slice.'}</h1>
-          <p className="lead">Registry terms, ownership, payment windows, and the public tape—read directly from Creditcoin.</p>
+          <p className="lead">Registry terms, ownership, payment windows, and the public tape, read directly from Creditcoin.</p>
         </div>
-        <div className="asset-id-ticket"><span>ASSET ID</span><code>{assetId}</code><a href={explorers.creditcoinAddress(addresses.registry)} target="_blank" rel="noreferrer">Inspect registry ↗</a></div>
+        <div className="asset-id-ticket"><span>ASSET ID</span><code>{assetId}</code><a href={explorers.creditcoinAddress(addresses.registry)} target="_blank" rel="noreferrer">Inspect registry <MaterialIcon name="open_in_new" /></a></div>
       </header>
 
-      {loading && <section className="asset-loading" aria-busy="true">{timing.show && <><LoadingMessage slow={timing.slow} network="Creditcoin">Assembling this asset’s public record…</LoadingMessage><TitleSkeleton /></>}{timing.prolonged && <Button variant="secondary" onClick={() => setRetryKey((key) => key + 1)}>Retry public read</Button>}</section>}
+      {loading && <section className="asset-loading" aria-busy="true">{timing.show && <><LoadingMessage slow={timing.slow} network="Creditcoin">Assembling this asset's public record...</LoadingMessage><TitleSkeleton /></>}{timing.prolonged && <Button variant="secondary" onClick={() => setRetryKey((key) => key + 1)}>Retry public read</Button>}</section>}
 
       {!loading && readError != null && <div className="notice-slot"><ErrorNotice error={readError} title="Could not read this asset" onRetry={() => setRetryKey((key) => key + 1)} /></div>}
 
-      {!loading && notFound && <DataEmptyState symbol="?" title="Asset not found" body={validAssetId ? 'The configured registry does not contain this asset ID.' : 'This URL does not contain a valid 32-byte asset ID.'} action={<Button href="/title" variant="secondary">Find another title</Button>} />}
+      {!loading && notFound && <DataEmptyState symbol="help" title="Asset not found" body={validAssetId ? 'The configured registry does not contain this asset ID.' : 'This URL does not contain a valid 32-byte asset ID.'} action={<Button href="/title" variant="secondary">Find another title</Button>} />}
 
       {!loading && asset && (
         <>
@@ -260,7 +261,7 @@ export default function AssetDetailPage() {
           <ShopRegistrationPanel assetId={assetId as Hex} expectedShop={asset.shopSepolia} />
 
           {actionError != null && <div className="notice-slot"><ErrorNotice error={actionError} title="The asset action did not complete" /></div>}
-          {actionPhase !== 'idle' && <ProgressStatus label={actionPhase === 'wallet' ? 'Connecting wallet…' : actionPhase === 'network' ? 'Switching to Creditcoin…' : actionPhase === 'signature' ? 'Waiting for settlement signature…' : actionPhase === 'confirmation' ? 'Confirming settlement…' : 'Refreshing this asset…'} />}
+          {actionPhase !== 'idle' && <ProgressStatus label={actionPhase === 'wallet' ? 'Connecting wallet...' : actionPhase === 'network' ? 'Switching to Creditcoin...' : actionPhase === 'signature' ? 'Waiting for settlement signature...' : actionPhase === 'confirmation' ? 'Confirming settlement...' : 'Refreshing this asset...'} />}
           {actionResult && <section className="durable-result"><Badge tone="live">Confirmed</Badge><div><strong>{actionResult.label}</strong><TransactionField label="Creditcoin transaction" value={actionResult.hash} explorerHref={explorers.creditcoinTx(actionResult.hash)} explorerLabel="View confirmation" /></div></section>}
 
           <section className="asset-schedule" aria-labelledby="asset-schedule-title" data-reveal>
@@ -279,10 +280,10 @@ export default function AssetDetailPage() {
                     <div className="asset-window-top"><span className="asset-window-number">{String(slice.n).padStart(2, '0')}</span><RecordStateBadge state={slice.state} /></div>
                     <div className="asset-window-date"><span>{timingState}</span><strong>{dateLabel(asset.windows[index] ?? slice.windowEnd)}</strong><small>{exactDate(asset.windows[index] ?? slice.windowEnd)}</small></div>
                     <p>{definition.meaning}</p>
-                    {hasPayment && (slice.state === 'live' || slice.state === 'disputed') && <Link className="asset-receipt-link" href={`/verify/${slice.payTx}`}>{slice.state === 'live' ? 'Open public receipt' : 'Inspect disputed payment'} →</Link>}
+                    {hasPayment && (slice.state === 'live' || slice.state === 'disputed') && <Link className="asset-receipt-link" href={`/verify/${slice.payTx}`}>{slice.state === 'live' ? 'Open public receipt' : 'Inspect disputed payment'} <MaterialIcon name="arrow_forward" /></Link>}
                     <div className="asset-window-actions">
                       {canPay && <Button href={`/send?assetId=${assetId}&slice=${slice.n}`} size="compact">Pay this slice</Button>}
-                      {canSettle && <ConfirmWriteAction title={`Settle slice ${slice.n}?`} consequence="This permanently records the closed window as Shortfall or Disputed according to the latest proven payment evidence." confirmLabel="Confirm settlement" loadingLabel="Settling…" onConfirm={() => settleSlice(slice.n)} busy={Boolean(actionBusy)}><div className="confirm-write-facts"><span>Creditcoin · ShortfallTape</span><code>{assetId}</code><span>Slice {slice.n}</span></div></ConfirmWriteAction>}
+                      {canSettle && <ConfirmWriteAction title={`Settle slice ${slice.n}?`} consequence="This permanently records the closed window as Shortfall or Disputed according to the latest proven payment evidence." confirmLabel="Confirm settlement" loadingLabel="Settling..." onConfirm={() => settleSlice(slice.n)} busy={Boolean(actionBusy)}><div className="confirm-write-facts"><span>Creditcoin | ShortfallTape</span><code>{assetId}</code><span>Slice {slice.n}</span></div></ConfirmWriteAction>}
                       {canReclaim && <ReclaimAction assetId={assetId as Hex} n={slice.n} windowEnd={slice.windowEnd} payTx={slice.payTx} paymentProven={slice.paymentProven} onConfirmed={(confirmed, transaction) => updateReclaimedSlice(slice.n, confirmed, transaction)} />}
                       {slice.reclaimTx && <TransactionField label="Confirmed reclaim" value={slice.reclaimTx} explorerHref={explorers.creditcoinTx(slice.reclaimTx)} explorerLabel="View confirmation" />}
                     </div>

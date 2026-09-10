@@ -20,10 +20,13 @@ contract ReliaShopAck {
     ///      not become a lie there.
     mapping(bytes32 => address) public shopOf;
 
-    /// @notice Set once per asset, by whoever registers it first.
-    /// @dev Deliberately permissionless-first-write: this is a testnet demo
-    ///      contract and the binding that actually gates title lives on
-    ///      Creditcoin in AssetRegistry.
+    /// @notice Set once per asset, by the shop itself.
+    /// @dev First-write-once, but self-registration only: `registerShop`
+    ///      requires `msg.sender == shop`, so a third party can no longer
+    ///      squat another shop's binding by front-running its registration
+    ///      transaction. The binding that actually gates title still lives on
+    ///      Creditcoin in AssetRegistry, and ProofConsumer cross-checks a
+    ///      proven ack against that copy — a lie here still can't move title.
     event ShopRegistered(bytes32 indexed assetId, address indexed shop);
 
     /// @param rel1 A `Rel1.KIND_ACK` record citing the exact payment tx hash.
@@ -34,9 +37,16 @@ contract ReliaShopAck {
     error ZeroShop();
     error SliceOutOfRange(uint8 n);
     error ZeroPayTx();
+    error NotTheRegisteringShop(address shop, address caller);
 
+    /// @notice Register `msg.sender` as the shop for `assetId`.
+    /// @dev Only the shop can claim its own slot — this closes the
+    ///      front-run where an observer registers a newly-listed assetId to
+    ///      an address the real shop does not control before the real shop's
+    ///      own registration transaction lands.
     function registerShop(bytes32 assetId, address shop) external {
         if (shop == address(0)) revert ZeroShop();
+        if (msg.sender != shop) revert NotTheRegisteringShop(shop, msg.sender);
         address current = shopOf[assetId];
         if (current != address(0)) revert AlreadyRegistered(assetId, current);
         shopOf[assetId] = shop;

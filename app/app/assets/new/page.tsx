@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { encodeFunctionData, formatUnits, isAddress, parseEventLogs, parseUnits, type Hex } from 'viem';
-import { ASSET_KINDS, registryAbi, shopAckAbi } from '@/lib/abi';
-import { addresses, contractConfiguration, creditcoinClient, explorers, sepoliaClient } from '@/lib/chain';
+import { ASSET_KINDS, registryAbi, shopAckAbi, paySinkAbi } from '@/lib/abi';
+import { addresses, contractConfiguration, creditcoinClient, explorers, isConfiguredContractAddress, sepoliaClient } from '@/lib/chain';
 import { ErrorNotice } from '@/components/ErrorNotice';
 import { TaskSteps } from '@/components/TaskSteps';
 import { AddressField, Badge, Button, IdentifierField, Notice, TransactionField } from '@/components/ui';
@@ -13,6 +13,7 @@ import { LoadingButton, ProgressStatus } from '@/components/LoadingUI';
 import { SignerContext } from '@/components/SignerContext';
 import { useWalletSnapshot } from '@/lib/useWalletSnapshot';
 import { ConfirmWriteAction } from '@/components/ConfirmWriteAction';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 type WizardMode = 'details' | 'review' | 'creditcoin' | 'sepolia' | 'complete';
 type WriteStage = 'idle' | 'wallet' | 'network' | 'signature' | 'confirmation' | 'done';
@@ -60,7 +61,7 @@ function WriteProgress({ chain, stage }: { chain: string; stage: WriteStage }) {
     <div className="listing-write-progress" aria-live="polite">
       <div className="listing-write-heading"><span>{chain}</span><Badge tone={stage === 'done' ? 'live' : stage === 'idle' ? 'neutral' : 'due'}>{stage === 'done' ? 'Confirmed' : stage === 'idle' ? 'Waiting' : WRITE_STAGES[current]?.label ?? 'Working'}</Badge></div>
       <ol>
-        {WRITE_STAGES.map((item, index) => <li data-state={stage === 'done' || index < current ? 'done' : index === current && stage !== 'idle' ? 'active' : 'pending'} key={item.key}><i>{stage === 'done' || index < current ? '✓' : index + 1}</i><span>{item.label}</span></li>)}
+        {WRITE_STAGES.map((item, index) => <li data-state={stage === 'done' || index < current ? 'done' : index === current && stage !== 'idle' ? 'active' : 'pending'} key={item.key}><i>{stage === 'done' || index < current ? <MaterialIcon name="check" /> : index + 1}</i><span>{item.label}</span></li>)}
       </ol>
     </div>
   );
@@ -84,6 +85,14 @@ export default function NewAssetPage() {
   const [sepoliaStage, setSepoliaStage] = useState<WriteStage>('idle');
   const [checkpoint, setCheckpoint] = useState<ListingCheckpoint | null>(null);
   const [problem, setProblem] = useState<unknown>(null);
+  const [sinkInstallmentAmount, setSinkInstallmentAmount] = useState<bigint | null>(null);
+
+  useEffect(() => {
+    if (!isConfiguredContractAddress(addresses.paySink)) return;
+    sepoliaClient.readContract({ address: addresses.paySink, abi: paySinkAbi, functionName: 'installmentAmount' })
+      .then((value) => setSinkInstallmentAmount(value as bigint))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const base = new Date();
@@ -214,6 +223,9 @@ export default function NewAssetPage() {
       if (currentShop.toLowerCase() !== ZERO_ADDRESS) throw new Error(`This asset is already registered to a different Sepolia shop: ${currentShop}`);
 
       const { client, account } = await walletClientFor(walletChains.sepolia, (activity) => activityStage(activity, setSepoliaStage));
+      if (account.toLowerCase() !== checkpoint.shopSepolia.toLowerCase()) {
+        throw new Error(`NotTheRegisteringShop: the connected account ${account} does not match the Sepolia shop address ${checkpoint.shopSepolia} being registered. A shop can only register itself.`);
+      }
       setSepoliaStage('signature');
       const hash = await client.sendTransaction({
         account,
@@ -265,33 +277,33 @@ export default function NewAssetPage() {
             <div className="task-panel-heading"><span className="task-step">01</span><div><h2 id="listing-terms-title">Purchase terms</h2><p>These values become the immutable reference used by later proofs.</p></div></div>
             <div className="listing-form-grid">
               <label className="field"><span>Asset kind</span><select value={kind} onChange={(event) => setKind(Number(event.target.value))}>{ASSET_KINDS.map((label, index) => <option value={index} key={label}>{label}</option>)}</select></label>
-              <label className="field"><span>Installment amount · USDC</span><input inputMode="decimal" value={installment} onChange={(event) => setInstallment(event.target.value)} aria-invalid={attempted && Boolean(validation.installment)} />{attempted && validation.installment && <small className="field-error">{validation.installment}</small>}</label>
-              <label className="field full"><span>Buyer address</span><input placeholder="0x…" value={buyer} onChange={(event) => setBuyer(event.target.value.trim())} aria-invalid={attempted && Boolean(validation.buyer)} />{attempted && validation.buyer && <small className="field-error">{validation.buyer}</small>}</label>
-              <label className="field"><span>Creditcoin shop address</span><input placeholder="0x…" value={shopCtc} onChange={(event) => setShopCtc(event.target.value.trim())} aria-invalid={attempted && Boolean(validation.shopCtc)} />{attempted && validation.shopCtc && <small className="field-error">{validation.shopCtc}</small>}</label>
-              <label className="field"><span>Sepolia shop address</span><input placeholder="0x…" value={shopSepolia} onChange={(event) => setShopSepolia(event.target.value.trim())} aria-invalid={attempted && Boolean(validation.shopSepolia)} />{attempted && validation.shopSepolia && <small className="field-error">{validation.shopSepolia}</small>}</label>
+              <label className="field"><span>Installment amount | USDC</span><input inputMode="decimal" value={installment} onChange={(event) => setInstallment(event.target.value)} aria-invalid={attempted && Boolean(validation.installment)} />{attempted && validation.installment && <small className="field-error">{validation.installment}</small>}{sinkInstallmentAmount != null && parsedInstallment > 0n && parsedInstallment !== sinkInstallmentAmount && <small className="field-error">The Sepolia payment contract only ever pulls {(Number(sinkInstallmentAmount) / 1e6).toFixed(2)} USDC per slice, no matter what is entered here. Listing at a different amount will desync /send from this asset's declared terms.</small>}</label>
+              <label className="field full"><span>Buyer address</span><input placeholder="0x..." value={buyer} onChange={(event) => setBuyer(event.target.value.trim())} aria-invalid={attempted && Boolean(validation.buyer)} />{attempted && validation.buyer && <small className="field-error">{validation.buyer}</small>}</label>
+              <label className="field"><span>Creditcoin shop address</span><input placeholder="0x..." value={shopCtc} onChange={(event) => setShopCtc(event.target.value.trim())} aria-invalid={attempted && Boolean(validation.shopCtc)} />{attempted && validation.shopCtc && <small className="field-error">{validation.shopCtc}</small>}</label>
+              <label className="field"><span>Sepolia shop address</span><input placeholder="0x..." value={shopSepolia} onChange={(event) => setShopSepolia(event.target.value.trim())} aria-invalid={attempted && Boolean(validation.shopSepolia)} />{attempted && validation.shopSepolia && <small className="field-error">{validation.shopSepolia}</small>}</label>
             </div>
 
             <div className="listing-schedule-builder">
               <div className="listing-subhead"><div><span className="mini-title">12 PAYMENT WINDOWS</span><h3>Build the deadline rhythm.</h3></div><p>The first deadline and cadence generate a strictly increasing schedule.</p></div>
               <div className="listing-generator-row">
                 <label className="field"><span>First payment deadline</span><input type="datetime-local" value={scheduleStart} onChange={(event) => setScheduleStart(event.target.value)} /></label>
-                <label className="field"><span>Cadence · days</span><input type="number" min="1" step="1" value={cadenceDays} onChange={(event) => setCadenceDays(event.target.value)} /></label>
+                <label className="field"><span>Cadence | days</span><input type="number" min="1" step="1" value={cadenceDays} onChange={(event) => setCadenceDays(event.target.value)} /></label>
                 <Button variant="secondary" onClick={generateSchedule}>Generate 12 dates</Button>
               </div>
               {attempted && validation.windows && <p className="field-error">{validation.windows}</p>}
-              <button className="listing-advanced-toggle" type="button" aria-expanded={advanced} onClick={() => setAdvanced((value) => !value)}>{advanced ? 'Hide individual deadlines' : 'Edit individual deadlines'} <span>{advanced ? '↑' : '↓'}</span></button>
+              <button className="listing-advanced-toggle" type="button" aria-expanded={advanced} onClick={() => setAdvanced((value) => !value)}>{advanced ? 'Hide individual deadlines' : 'Edit individual deadlines'} <MaterialIcon name={advanced ? 'keyboard_arrow_up' : 'keyboard_arrow_down'} /></button>
               {advanced && <div className="listing-window-editor">{windows.map((value, index) => <label className="field" key={index}><span>Slice {String(index + 1).padStart(2, '0')}</span><input type="datetime-local" value={value} onChange={(event) => setWindows((current) => current.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} /></label>)}</div>}
             </div>
             <div className="listing-form-actions"><Button onClick={openReview} disabled={!formValid && attempted}>Review immutable terms</Button><span>No wallet opens until after review.</span></div>
           </section>
 
           <aside className="task-panel task-review listing-review" aria-labelledby="listing-review-title">
-            <div className="task-panel-heading"><span className="task-step task-step-note">{mode === 'review' ? '✓' : '→'}</span><div><h2 id="listing-review-title">Readable review</h2><p>Check both identities and the full schedule before signing.</p></div></div>
+            <div className="task-panel-heading"><span className="task-step task-step-note"><MaterialIcon name={mode === 'review' ? 'check' : 'arrow_forward'} /></span><div><h2 id="listing-review-title">Readable review</h2><p>Check both identities and the full schedule before signing.</p></div></div>
             <dl className="transaction-summary-list"><div><dt>Kind</dt><dd>{ASSET_KINDS[kind]}</dd></div><div><dt>Installment</dt><dd>{formatUnits(parsedInstallment, 6)} USDC</dd></div><div><dt>Buyer</dt><dd><code>{buyer || 'Not set'}</code></dd></div><div><dt>CTC shop</dt><dd><code>{shopCtc || 'Not set'}</code></dd></div><div><dt>Sepolia shop</dt><dd><code>{shopSepolia || 'Not set'}</code></dd></div></dl>
             <ol className="listing-review-windows">{windows.map((value, index) => <li key={index}><span>{String(index + 1).padStart(2, '0')}</span><time>{value ? new Date(value).toLocaleString() : 'Not set'}</time></li>)}</ol>
             <Notice tone="editorial" title="Two signatures, one durable checkpoint" consequence="Creditcoin is submitted first. If Sepolia fails, the confirmed title is preserved and this page offers Finish shop registration." />
             <SignerContext account={wallet.account} role="Listing caller" network="Creditcoin" contract={addresses.registry} />
-            <div className="listing-review-actions"><LoadingButton onClick={() => void listOnCreditcoin()} disabled={!formValid || mode !== 'review'} loading={creditcoinStage !== 'idle' && creditcoinStage !== 'done'} loadingLabel="Creating title…">Create title on Creditcoin</LoadingButton>{mode === 'review' && <Button variant="quiet" onClick={() => setMode('details')}>Keep editing</Button>}</div>
+            <div className="listing-review-actions"><LoadingButton onClick={() => void listOnCreditcoin()} disabled={!formValid || mode !== 'review'} loading={creditcoinStage !== 'idle' && creditcoinStage !== 'done'} loadingLabel="Creating title...">Create title on Creditcoin</LoadingButton>{mode === 'review' && <Button variant="quiet" onClick={() => setMode('details')}>Keep editing</Button>}</div>
           </aside>
         </div>
       )}
@@ -300,17 +312,17 @@ export default function NewAssetPage() {
 
       {(mode === 'creditcoin' || mode === 'sepolia' || mode === 'complete') && (
         <section className="listing-chain-progress" aria-label="Two-chain transaction progress">
-          <WriteProgress chain="01 · Creditcoin listing" stage={creditcoinStage} />
-          <div className="listing-chain-connector" aria-hidden="true">→</div>
-          <WriteProgress chain="02 · Sepolia shop" stage={sepoliaStage} />
+          <WriteProgress chain="01 | Creditcoin listing" stage={creditcoinStage} />
+          <div className="listing-chain-connector" aria-hidden="true"><MaterialIcon name="arrow_forward" /></div>
+          <WriteProgress chain="02 | Sepolia shop" stage={sepoliaStage} />
         </section>
       )}
 
-      {mode === 'creditcoin' && !checkpoint && <section className="listing-signing-card"><Badge tone="due">Wallet flow active</Badge><h2>Creating the title on Creditcoin…</h2><p>Keep this page open through network confirmation. The asset ID comes from the confirmed Listed event.</p></section>}
-      {creditcoinStage !== 'idle' && creditcoinStage !== 'done' && <ProgressStatus label={creditcoinStage === 'wallet' ? 'Connecting wallet…' : creditcoinStage === 'network' ? 'Switching to Creditcoin…' : creditcoinStage === 'signature' ? 'Waiting for listing signature…' : 'Confirming title creation…'} />}
+      {mode === 'creditcoin' && !checkpoint && <section className="listing-signing-card"><Badge tone="due">Wallet flow active</Badge><h2>Creating the title on Creditcoin...</h2><p>Keep this page open through network confirmation. The asset ID comes from the confirmed Listed event.</p></section>}
+      {creditcoinStage !== 'idle' && creditcoinStage !== 'done' && <ProgressStatus label={creditcoinStage === 'wallet' ? 'Connecting wallet...' : creditcoinStage === 'network' ? 'Switching to Creditcoin...' : creditcoinStage === 'signature' ? 'Waiting for listing signature...' : 'Confirming title creation...'} />}
 
-      {mode === 'sepolia' && checkpoint && <section className="listing-finish-card"><div><span className="mini-title">SECOND CHAIN · RESUMABLE</span><h2>Finish shop registration.</h2><p>Relia will first compare the saved shop with the immutable Creditcoin record and the current Sepolia binding. Registration proceeds only when they agree.</p><AddressField label="Expected Sepolia shop" value={checkpoint.shopSepolia} explorerHref={explorers.sepoliaAddress(checkpoint.shopSepolia)} explorerLabel="Shop on Sepolia" /></div><div className="listing-finish-action"><Badge tone="due">Creditcoin confirmed</Badge><SignerContext account={wallet.account} role="Registration caller" network="Sepolia" contract={addresses.shopAck} /><ConfirmWriteAction title="Register this shop permanently?" consequence="This first-write binding has no replacement method. The address must match the already-confirmed Creditcoin title terms." confirmLabel="Confirm shop registration" loadingLabel={sepoliaStage === 'wallet' ? 'Connecting wallet…' : sepoliaStage === 'network' ? 'Switching to Sepolia…' : sepoliaStage === 'signature' ? 'Waiting for signature…' : 'Confirming registration…'} onConfirm={registerOnSepolia} busy={sepoliaStage !== 'idle' && sepoliaStage !== 'done'}><AddressField label="Shop to bind" value={checkpoint.shopSepolia} /></ConfirmWriteAction><small>Any caller may submit the first-write binding; the registered shop address must match the immutable terms.</small></div></section>}
-      {sepoliaStage !== 'idle' && sepoliaStage !== 'done' && <ProgressStatus label={sepoliaStage === 'wallet' ? 'Connecting wallet…' : sepoliaStage === 'network' ? 'Switching to Sepolia…' : sepoliaStage === 'signature' ? 'Waiting for registration signature…' : 'Confirming shop registration…'} />}
+      {mode === 'sepolia' && checkpoint && <section className="listing-finish-card"><div><span className="mini-title">SECOND CHAIN | RESUMABLE</span><h2>Finish shop registration.</h2><p>Relia will first compare the saved shop with the immutable Creditcoin record and the current Sepolia binding. Registration proceeds only when they agree.</p><AddressField label="Expected Sepolia shop" value={checkpoint.shopSepolia} explorerHref={explorers.sepoliaAddress(checkpoint.shopSepolia)} explorerLabel="Shop on Sepolia" /></div><div className="listing-finish-action"><Badge tone="due">Creditcoin confirmed</Badge><SignerContext account={wallet.account} role="Registration caller" network="Sepolia" contract={addresses.shopAck} /><ConfirmWriteAction title="Register this shop permanently?" consequence="This first-write binding has no replacement method. The address must match the already-confirmed Creditcoin title terms." confirmLabel="Confirm shop registration" loadingLabel={sepoliaStage === 'wallet' ? 'Connecting wallet...' : sepoliaStage === 'network' ? 'Switching to Sepolia...' : sepoliaStage === 'signature' ? 'Waiting for signature...' : 'Confirming registration...'} onConfirm={registerOnSepolia} busy={sepoliaStage !== 'idle' && sepoliaStage !== 'done'}><AddressField label="Shop to bind" value={checkpoint.shopSepolia} /></ConfirmWriteAction><small>Any caller may submit the first-write binding; the registered shop address must match the immutable terms.</small></div></section>}
+      {sepoliaStage !== 'idle' && sepoliaStage !== 'done' && <ProgressStatus label={sepoliaStage === 'wallet' ? 'Connecting wallet...' : sepoliaStage === 'network' ? 'Switching to Sepolia...' : sepoliaStage === 'signature' ? 'Waiting for registration signature...' : 'Confirming shop registration...'} />}
 
       {mode === 'complete' && checkpoint && <section className="listing-complete" aria-labelledby="listing-complete-title"><Badge tone="live">Both chains confirmed</Badge><h1 id="listing-complete-title">The title is ready to use.</h1><p>Its terms live on Creditcoin and the matching shop is bound on Sepolia.</p><div className="listing-result-transactions"><TransactionField label="Creditcoin listing" value={checkpoint.creditcoinTx} explorerHref={explorers.creditcoinTx(checkpoint.creditcoinTx)} explorerLabel="View listing" />{checkpoint.sepoliaTx && <TransactionField label="Sepolia registration" value={checkpoint.sepoliaTx} explorerHref={explorers.sepoliaTx(checkpoint.sepoliaTx)} explorerLabel="View registration" />}</div><div className="listing-complete-actions"><Button href={`/assets/${checkpoint.assetId}`}>Open asset record</Button><Button variant="secondary" href={`/send?assetId=${checkpoint.assetId}&slice=1`}>Send first installment</Button><Button variant="secondary" href={`/title/${checkpoint.assetId}`}>Manage title</Button><Button variant="quiet" onClick={resetWizard}>List another asset</Button></div></section>}
 

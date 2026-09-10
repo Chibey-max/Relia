@@ -18,6 +18,7 @@ import { TapeHistory } from '@/components/TapeHistory';
 import { SignerContext } from '@/components/SignerContext';
 import { useWalletSnapshot } from '@/lib/useWalletSnapshot';
 import { ConfirmWriteAction } from '@/components/ConfirmWriteAction';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 interface Row {
   assetId: `0x${string}`;
@@ -71,7 +72,7 @@ export default function TapePage() {
 
   /**
    * Nothing on the tape turns red on its own. A window closing is not an
-   * event, so someone has to write the outcome — Shortfall if no payment was
+   * event, so someone has to write the outcome: Shortfall if no payment was
    * proven, Disputed if one was and the shop never acknowledged it.
    * Permissionless on purpose: the buyer has every incentive to call it too.
    */
@@ -169,21 +170,21 @@ export default function TapePage() {
       <div className="eyebrow"><span className="dot" />Public record</div>
       <h1>The tape shows good months and hard ones.</h1>
       <p className="lead">
-        Every slice of every listed asset, as Creditcoin has it. Bad outcomes are real and stay visible — a record
+        Every slice of every listed asset, as Creditcoin has it. Bad outcomes are real and stay visible, a record
         that only shows the good months is not worth carrying.
       </p>
       </header>
 
       {actionError != null && <div className="action-error-slot"><ErrorNotice error={actionError} title="Could not settle this slice" /></div>}
-      {settlePhase !== 'idle' && <ProgressStatus label={settlePhase === 'wallet' ? 'Connecting wallet…' : settlePhase === 'network' ? 'Switching to Creditcoin…' : settlePhase === 'signature' ? 'Waiting for settlement signature…' : settlePhase === 'confirmation' ? 'Confirming settlement on Creditcoin…' : 'Refreshing this slice…'} detail="The rest of the tape stays in place while this row refreshes." />}
-      {settleResult && <section className="durable-result"><span className="status-badge status-live">✓ CONFIRMED</span><div><strong>Slice {settleResult.n} settled without reloading the page.</strong><TableIdentifier value={settleResult.hash} copyLabel="Copy settlement transaction" href={explorers.creditcoinTx(settleResult.hash)} actionLabel="View confirmation" external /></div></section>}
+      {settlePhase !== 'idle' && <ProgressStatus label={settlePhase === 'wallet' ? 'Connecting wallet...' : settlePhase === 'network' ? 'Switching to Creditcoin...' : settlePhase === 'signature' ? 'Waiting for settlement signature...' : settlePhase === 'confirmation' ? 'Confirming settlement on Creditcoin...' : 'Refreshing this slice...'} detail="The rest of the tape stays in place while this row refreshes." />}
+      {settleResult && <section className="durable-result"><span className="status-badge status-live"><MaterialIcon name="check" /> CONFIRMED</span><div><strong>Slice {settleResult.n} settled without reloading the page.</strong><TableIdentifier value={settleResult.hash} copyLabel="Copy settlement transaction" href={explorers.creditcoinTx(settleResult.hash)} actionLabel="View confirmation" external /></div></section>}
 
       <section className="screen-card data-surface" aria-busy={loading} aria-labelledby="all-title-slices-title" data-reveal>
-        <div className="data-surface-head"><div><span className="mini-title">CREDITCOIN</span><h2 id="all-title-slices-title">All title slices</h2></div><span className="status-badge status-live">● LIVE READ</span></div>
+        <div className="data-surface-head"><div><span className="mini-title">CREDITCOIN</span><h2 id="all-title-slices-title">All title slices</h2></div><span className="status-badge status-live"><MaterialIcon name="circle" /> LIVE READ</span></div>
         <div className="tape-filter-panel" aria-label="Filter title slices">
-          <label><span>Asset</span><select value={assetFilter} onChange={(event) => setAssetFilter(event.target.value)}><option value="">All assets</option>{assets.map((asset) => <option value={asset.assetId} key={asset.assetId}>{ASSET_KINDS[asset.kind] ?? asset.kind} · {shortId(asset.assetId)}</option>)}</select></label>
-          <label><span>Buyer</span><input value={buyerFilter} onChange={(event) => setBuyerFilter(event.target.value.trim())} placeholder="0x…" /></label>
-          <label><span>Shop</span><input value={shopFilter} onChange={(event) => setShopFilter(event.target.value.trim())} placeholder="0x…" /></label>
+          <label><span>Asset</span><select value={assetFilter} onChange={(event) => setAssetFilter(event.target.value)}><option value="">All assets</option>{assets.map((asset) => <option value={asset.assetId} key={asset.assetId}>{ASSET_KINDS[asset.kind] ?? asset.kind} | {shortId(asset.assetId)}</option>)}</select></label>
+          <label><span>Buyer</span><input value={buyerFilter} onChange={(event) => setBuyerFilter(event.target.value.trim())} placeholder="0x..." /></label>
+          <label><span>Shop</span><input value={shopFilter} onChange={(event) => setShopFilter(event.target.value.trim())} placeholder="0x..." /></label>
           <label><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="">All states</option>{Object.entries(RECORD_STATES).map(([key, definition]) => <option value={key} key={key}>{definition.label}</option>)}</select></label>
           <label className="tape-actionable-filter"><input type="checkbox" checked={actionableOnly} onChange={(event) => setActionableOnly(event.target.checked)} /><span>Actionable only</span></label>
           <div className="tape-filter-result"><strong>{filteredRows.length}</strong><span>of {rows.length} slices</span>{(assetFilter || buyerFilter || shopFilter || statusFilter || actionableOnly) && <button type="button" onClick={() => { setAssetFilter(''); setBuyerFilter(''); setShopFilter(''); setStatusFilter(''); setActionableOnly(false); }}>Clear filters</button>}</div>
@@ -192,15 +193,15 @@ export default function TapePage() {
         <div className="table-scroll data-surface-scroll">
           {loading ? (
             <div className="loading-data-region">
-              {timing.show && <><LoadingMessage slow={timing.slow} network="Creditcoin">Reading the public tape from Creditcoin…</LoadingMessage><TableSkeleton rows={6} columns={7} labels={['Asset', 'Kind', 'Slice', 'Status', 'Window ends', 'Payment', 'Action']} /></>}
+              {timing.show && <><LoadingMessage slow={timing.slow} network="Creditcoin">Reading the public tape from Creditcoin...</LoadingMessage><TableSkeleton rows={6} columns={7} labels={['Asset', 'Kind', 'Slice', 'Status', 'Window ends', 'Payment', 'Action']} /></>}
               {timing.prolonged && <button className="secondary loading-retry" onClick={() => setRetryKey((key) => key + 1)}>Retry tape read</button>}
             </div>
           ) : loadError != null ? (
             <div className="loading-error-region"><ErrorNotice error={loadError} title="Could not read the tape" onRetry={() => setRetryKey((key) => key + 1)} /></div>
           ) : rows.length === 0 ? (
-            <DataEmptyState symbol="✶" title="No title slices to show" body="The tape is reachable, but no assets have been listed on this deployment yet." action={<a href={explorers.creditcoinAddress(addresses.registry)} target="_blank" rel="noreferrer">Inspect the registry ↗</a>} />
+            <DataEmptyState symbol="auto_awesome" title="No title slices to show" body="The tape is reachable, but no assets have been listed on this deployment yet." action={<a href={explorers.creditcoinAddress(addresses.registry)} target="_blank" rel="noreferrer">Inspect the registry <MaterialIcon name="open_in_new" /></a>} />
           ) : filteredRows.length === 0 ? (
-            <DataEmptyState symbol="⌕" title="No slices match these filters" body="The public tape still has records; broaden or clear the current filters to see them." action={<button className="secondary" type="button" onClick={() => { setAssetFilter(''); setBuyerFilter(''); setShopFilter(''); setStatusFilter(''); setActionableOnly(false); }}>Clear filters</button>} />
+            <DataEmptyState symbol="search_off" title="No slices match these filters" body="The public tape still has records; broaden or clear the current filters to see them." action={<button className="secondary" type="button" onClick={() => { setAssetFilter(''); setBuyerFilter(''); setShopFilter(''); setStatusFilter(''); setActionableOnly(false); }}>Clear filters</button>} />
           ) : <table className="data-table">
             <caption className="sr-only">All title slices recorded by the Creditcoin ShortfallTape contract</caption>
             <thead>
@@ -217,7 +218,7 @@ export default function TapePage() {
                     <td data-label="Kind">{ASSET_KINDS[r.kind] ?? r.kind}</td>
                     <td data-label="Slice">{r.n}</td>
                     <td data-label="Status">
-                      {state ? <RecordStateBadge state={state} /> : <span className="status-badge">? Unknown</span>}
+                      {state ? <RecordStateBadge state={state} /> : <span className="status-badge"><MaterialIcon name="help" /> Unknown</span>}
                       {definition && <div className="aside-note table-status-note">{definition.meaning}<br /><strong>Next:</strong> {definition.nextAction}</div>}
                     </td>
                     <td data-label="Window ends">{new Date(Number(r.windowEnd) * 1000).toISOString().slice(0, 10)}</td>
@@ -226,7 +227,7 @@ export default function TapePage() {
                     </td>
                     <td data-label="Action">
                       {state === 'due' && Number(r.windowEnd) * 1000 < Date.now() && (
-                        <ConfirmWriteAction title={`Settle slice ${r.n}?`} consequence="This writes the closed window’s final Shortfall or Disputed state to the append-only tape. It does not move funds and cannot erase the previous record." confirmLabel="Confirm settlement" loadingLabel="Settling…" onConfirm={() => settle(r.assetId, r.n)} busy={busy !== ''}><div className="confirm-write-facts"><span>Creditcoin</span><code>{r.assetId}</code><span>Slice {r.n}</span></div></ConfirmWriteAction>
+                        <ConfirmWriteAction title={`Settle slice ${r.n}?`} consequence="This writes the closed window's final Shortfall or Disputed state to the append-only tape. It does not move funds and cannot erase the previous record." confirmLabel="Confirm settlement" loadingLabel="Settling..." onConfirm={() => settle(r.assetId, r.n)} busy={busy !== ''}><div className="confirm-write-facts"><span>Creditcoin</span><code>{r.assetId}</code><span>Slice {r.n}</span></div></ConfirmWriteAction>
                       )}
                       {state === 'shortfall' && <ReclaimAction assetId={r.assetId} n={r.n} windowEnd={r.windowEnd} payTx={r.payTx} paymentProven={r.paymentProven} onConfirmed={(slice, transaction) => updateReclaimedRow(r.assetId, r.n, slice, transaction)} />}
                       {r.reclaimTx && <TableIdentifier value={r.reclaimTx} copyLabel="Copy reclaim transaction" href={explorers.creditcoinTx(r.reclaimTx)} actionLabel="Confirmed" external />}

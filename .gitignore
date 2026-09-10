@@ -5,6 +5,8 @@ broadcast/*/dry-run/
 .env
 .env.local
 worker/dist/
+worker/.relia-worker-state.json
+worker/.relia-worker-state.*.json
 app/.next/
 app/.next-*/
 app/out/

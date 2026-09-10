@@ -31,27 +31,67 @@ Built for BUIDL CTC 2026 Fall (Creditcoin + Credit Labs).
 | Refusal test suite | **46 tests green** under `forge test` |
 | Worker | Written, typechecks, builds |
 | Frontend scaffold | Four routes, builds clean |
-| **Deployed to testnet** | **Not yet** — see below |
-| **End-to-end run** | **Not yet** — see below |
+| **Deployed to testnet** | **Sepolia and Creditcoin: yes** — see [addresses](#deployed-addresses) |
+| **End-to-end run** | **Live** — Sepolia payment + acknowledgement proved on Creditcoin |
 
-### What has not been done, and why
+### Deployed addresses
 
-The build environment for this work had no outbound network access to
-`github.com`, to any Sepolia RPC, or to `*.cc3-testnet.creditcoin.network`.
-So the following are complete as code but unexecuted:
+Redeployed 2026-09-09 after fixing the Creditcoin receipt-log scan, plus the
+earlier 2026-09-08 contract findings: `ReliaShopAck`
+(front-runnable `registerShop`, [contracts/sepolia/ReliaShopAck.sol](contracts/sepolia/ReliaShopAck.sol))
+now requires the caller to be the shop it is registering, and `TitlePass`
+(missing receiver check, [contracts/creditcoin/TitlePass.sol](contracts/creditcoin/TitlePass.sol))
+now checks `IERC721Receiver` in `safeTransferFrom`. All contracts were
+redeployed together for a clean, matching address set — the demo asset was
+re-listed and the shop re-registered under the new deployment. 56/56 tests
+pass (46 original + 10 covering these two fixes).
 
-- Contracts are **not deployed** to either testnet; no addresses to record.
-- No end-to-end run: no real payment has produced a real title tick.
-- The Hello Bridge / Loan Flow tutorials were **not** run green.
-- The decoder address and Creditcoin chain ID are **unverified** constants.
+**Sepolia (chain ID `11155111`)**
 
-Gate 1 was resolved instead by reading the published SDK's source, which ships
-the full TypeScript and the canonical decoder ABI. The evidence is specific and
-is laid out in full in [`docs/gate-1-findings.md`](docs/gate-1-findings.md) —
-but source inspection is not a green round trip, and this README will not
-pretend otherwise. **No result in this repo is mocked and presented as live.**
+| Contract | Address |
+|---|---|
+| MockUSDC | `0x0cd668A257D28e369DCf7e3C36F41cE451ef8000` |
+| ReliaPaySink | `0x809CdCD32Ac8851D3f4DbC2DA13bcb82aCEefa7D` |
+| ReliaShopAck | `0x091b76c3919B78c6c746032F00160A34fb321bdf` |
 
-Closing the gap needs one online session: see [Deploying](#deploying).
+**Creditcoin Testnet (chain ID `102031`)**
+
+| Contract | Address |
+|---|---|
+| AssetRegistry | `0x6A5B61Db6A6FBF97cF1EB8Da1885198e62A1fc90` |
+| ShortfallTape | `0x504135Af815a5a2EF2C40b55B13DaB2bb007F29c` |
+| TitlePass | `0xFa06135c72dE736556b57795d7893E4e6ABE3360` |
+| ProofConsumer | `0x71F008587f49b560b167C5581855D297b3a1f75f` |
+
+Demo asset (relisted under this deployment): `0x5aea9e7b1c2f754cacfb4cd1113db6727b001400fcfa4eaeb40e2c3aff425668`,
+shop `0xbD00277dFec1265d2aA10e003A331839c4aE14C8` registered on both chains,
+buyer `0x3bF16591b7FAd920e34b2bF8B0b788AFF8Ae05e7`.
+
+Live proof, 2026-09-09: Sepolia payment
+`0x0e07b1fd3695b95299d877f4772d6a12aec05ddb9662c11159676dc3f7e355d8`
+and shop acknowledgement
+`0xf4b28cdfe57ff04ebbc8d4db0f2e4f35d6add642040f854a3cbd537ce9786190`
+were consumed by Creditcoin transaction
+`0x0fd7b4319f4cd8693d92578a29451d032082b80bce4b09f63b41d1bc27405ab2`
+in block `5457260`. `InstallmentReceipt` was emitted, both source hashes are
+marked consumed, and title slice `1` is live.
+
+ABIs for these are in [`app/lib/abi.ts`](app/lib/abi.ts) (frontend) and
+[`worker/src/abi.ts`](worker/src/abi.ts) (worker); full compiled ABI JSON is
+under `contracts/out/<Contract>.sol/<Contract>.json`. The frontend reads these
+addresses from `app/.env.local` (see `app/.env.local.example`) via
+[`app/lib/chain.ts`](app/lib/chain.ts) — copy the example file and fill in the
+values above to point a local frontend at these deployments.
+
+### Remaining Caveat
+
+The Hello Bridge / Loan Flow tutorials were not run green. Relia's own live
+round trip is now complete: a real Sepolia payment and acknowledgement produced
+a real Creditcoin receipt and title tick. **No result in this repo is mocked and
+presented as live.**
+
+The remaining QA gap is external: a hands-on browser-extension signing journey
+and device/browser coverage outside this container.
 
 ---
 
@@ -204,7 +244,11 @@ export WINDOW_SPACING_SECONDS=300     # short windows so a demo can close one
 
 forge script contracts/script/ListAsset.s.sol --rpc-url creditcoin --broadcast
 export ASSET_ID=0x…                   # printed by the line above
-forge script contracts/script/RegisterShop.s.sol --rpc-url sepolia --broadcast
+
+# RegisterShop must be broadcast with the SHOP's own key: registerShop()
+# requires msg.sender == shop, so a third party can no longer squat another
+# shop's binding.
+forge script contracts/script/RegisterShop.s.sol --rpc-url sepolia --broadcast --private-key $SHOP_PRIVATE_KEY
 ```
 
 A closed window writes nothing on its own — `settleWindow` decides Shortfall
@@ -227,13 +271,20 @@ cast code $CREDITCOIN_DECODER --rpc-url $CREDITCOIN_RPC_URL
 cd worker && npm install && npm run dev
 ```
 
-Emits JSON-line stage events on stdout (`sepolia_mined`, `block_finalized`,
-`attested`, `ack_located`, `proof_generated`, `verified`, `title_ticked`) and
+Emits JSON-line stage events on stdout (`sepolia_mined`, `ack_located`,
+`proof_queued`, `block_finalized`, `attested`, `proof_generated`,
+`proof_submitted`, `verified`, `title_ticked`) and
 mirrors the latest bounded set at the read-only `GET /status` endpoint on port
 8787. The frontend can therefore show the attestation wait as real hashes
 resolving rather than a spinner. Human logs go to stderr. Configure
 `WORKER_STATUS_ORIGIN` and `NEXT_PUBLIC_PROOF_STATUS_URL` when the two processes
 do not use the default local origins.
+
+The worker also checkpoints its public cursor, paired Sepolia facts, emitted
+status events, and any submitted Creditcoin proof transaction to
+`WORKER_STATE_PATH` (default `.relia-worker-state.json`). On restart it resumes
+from that checkpoint and waits on a previously submitted proof transaction
+instead of broadcasting a duplicate.
 
 The worker has **no custody**. It holds no user funds, has no authority over
 anyone's money, and cannot cause a payment or an acknowledgement. Its only

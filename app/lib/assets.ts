@@ -17,7 +17,7 @@ export interface ListedAsset {
  * Every asset the registry has listed, read from its Listed events.
  *
  * Shared by /tape and /send so a demo never has to paste a raw 32-byte id from
- * a terminal — the ids come from the chain that issued them.
+ * a terminal. The ids come from the chain that issued them.
  */
 export async function loadListedAssets(): Promise<ListedAsset[]> {
   if (/^0x[0-9a-fA-F]{64}$/.test(configuredAssetId)) {
@@ -60,5 +60,5 @@ export async function loadListedAssets(): Promise<ListedAsset[]> {
 }
 
 export function shortId(id: string): string {
-  return `${id.slice(0, 10)}…${id.slice(-6)}`;
+  return `${id.slice(0, 10)}...${id.slice(-6)}`;
 }

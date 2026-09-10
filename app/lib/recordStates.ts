@@ -12,31 +12,31 @@ export interface RecordStateDefinition {
 export const RECORD_STATES: Record<RecordState, RecordStateDefinition> = {
   live: {
     label: 'Live',
-    symbol: '✓',
+    symbol: 'check',
     meaning: 'The payment and matching shop acknowledgement are proven. This title slice is active.',
     nextAction: 'Open or share the public receipt.',
   },
   disputed: {
     label: 'Disputed',
-    symbol: '!',
+    symbol: 'warning',
     meaning: 'A payment was proven, but the acknowledgement window closed without a valid shop response.',
     nextAction: 'Inspect the payment record; the shop cannot reclaim this slice.',
   },
   shortfall: {
     label: 'Shortfall',
-    symbol: '×',
+    symbol: 'close',
     meaning: 'The payment window closed without a proven installment.',
     nextAction: 'Inspect the closed window; the shop may reclaim this slice.',
   },
   reclaimed: {
     label: 'Reclaimed',
-    symbol: '↩',
+    symbol: 'keyboard_return',
     meaning: 'The shop reclaimed a slice after a recorded shortfall.',
     nextAction: 'Inspect the tape before beginning another payment.',
   },
   due: {
     label: 'Due',
-    symbol: '○',
+    symbol: 'radio_button_unchecked',
     meaning: 'The installment window is unresolved. It may still be waiting for payment, acknowledgement, or proof.',
     nextAction: 'Send the installment, finish its proof, or settle it after the window closes.',
   },

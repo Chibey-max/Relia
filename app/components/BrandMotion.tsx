@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import type Matter from 'matter-js';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 const REFUSALS = [
   'NOTSUCCESSFUL',
@@ -19,32 +20,8 @@ const REFUSALS = [
 const DISC_COUNT = 16;
 
 function MotionIcon({ index }: { index: number }) {
-  const common = {
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    strokeWidth: 1.8,
-  };
-
-  switch (index % 8) {
-    case 0:
-      return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="m5 12 4 4L19 6" /></svg>;
-    case 1:
-      return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="M12 3 3 12l9 9 9-9-9-9Z" /><path {...common} d="M12 8v5m0 3h.01" /></svg>;
-    case 2:
-      return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="m7 7 10 10M17 7 7 17" /></svg>;
-    case 3:
-      return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="M9 7 4 12l5 5" /><path {...common} d="M5 12h9a5 5 0 0 1 5 5" /></svg>;
-    case 4:
-      return <svg viewBox="0 0 24 24" aria-hidden="true"><circle {...common} cx="12" cy="12" r="7" /><path {...common} d="M12 8v4l3 2" /></svg>;
-    case 5:
-      return <svg viewBox="0 0 24 24" aria-hidden="true"><rect {...common} x="4" y="4" width="7" height="7" rx="1" /><rect {...common} x="13" y="13" width="7" height="7" rx="1" /></svg>;
-    case 6:
-      return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="M9.5 14.5 14.5 9" /><path {...common} d="M7 16.5 5.5 18A3.5 3.5 0 0 1 .5 13l3-3a3.5 3.5 0 0 1 5 0" transform="translate(3)" /><path {...common} d="m17 7.5 1.5-1.5a3.5 3.5 0 0 1 5 5l-3 3a3.5 3.5 0 0 1-5 0" transform="translate(-3)" /></svg>;
-    default:
-      return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="M7 3h8l4 4v14H7V3Z" /><path {...common} d="M15 3v5h4M10 12h6m-6 4h6" /></svg>;
-  }
+  const icons = ['check', 'warning', 'close', 'keyboard_return', 'schedule', 'dashboard', 'link', 'receipt_long'];
+  return <MaterialIcon name={icons[index % icons.length]} />;
 }
 
 export function BrandMotion() {
@@ -313,7 +290,7 @@ export function BrandMotion() {
         <path d="M20 30 C 50 10, 80 140, 60 140 C 30 140, 30 60, 90 70 C 140 80, 160 180, 130 180 C 100 180, 100 100, 180 110 C 240 120, 260 190, 380 150" />
       </svg>
 
-      <h2 id="brand-motion-heading" className="brand-motion-sr-only">Relia — title, proven</h2>
+      <h2 id="brand-motion-heading" className="brand-motion-sr-only">Relia, title proven</h2>
       <p id="brand-motion-instructions" className="brand-motion-sr-only">A playful field of title-state tokens. Drag with a pointer, or focus the field and use the arrow, Enter, or Space keys to nudge the tokens.</p>
       <div className="brand-motion-lockup" aria-hidden="true">
         <div className="brand-motion-word">
@@ -353,7 +330,7 @@ export function BrandMotion() {
             <span className="brand-motion-ticker-group" key={group}>
               {REFUSALS.map((refusal) => (
                 <span className="brand-motion-ticker-item" key={`${group}-${refusal}`}>
-                  <span>{refusal}</span><span className="brand-motion-star">✦</span>
+                  <span>{refusal}</span><span className="brand-motion-star"><MaterialIcon name="auto_awesome" /></span>
                 </span>
               ))}
             </span>

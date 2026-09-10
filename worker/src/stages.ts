@@ -12,10 +12,12 @@
 
 export type StageName =
   | 'sepolia_mined'
+  | 'proof_queued'
   | 'block_finalized'
   | 'attested'
   | 'ack_located'
   | 'proof_generated'
+  | 'proof_submitted'
   | 'verified'
   | 'title_ticked';
 

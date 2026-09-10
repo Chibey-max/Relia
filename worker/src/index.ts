@@ -17,9 +17,11 @@ import type { BatchContinuityResponse, BatchMerkleProofEntry } from '@gluwa/usc-
 import { config } from './config.js';
 import { PAY_SINK_ABI, SHOP_ACK_ABI, PROOF_CONSUMER_ABI } from './abi.js';
 import { resolveSourceChainKey } from './chainkey.js';
+import { CurlProofBuilder, type ProofBuilderLike } from './curlProofBuilder.js';
 import { decodeRefusal } from './refusals.js';
 import { failure, log, stage } from './stages.js';
 import { startProofStatusServer } from './status.js';
+import { createWorkerStateStore, loadWorkerState } from './state.js';
 
 interface Seen {
   txHash: string;
@@ -31,6 +33,8 @@ interface Pair {
   n: number;
   pay?: Seen;
   ack?: Seen;
+  proofTxHash?: string;
+  proofRetryAfter?: number;
   /** Set once submitted or found already consumed, so we never resubmit. */
   done?: boolean;
 }
@@ -40,35 +44,61 @@ const pairs = new Map<string, Pair>();
 const keyOf = (assetId: string, n: number): string => `${assetId.toLowerCase()}:${n}`;
 
 async function main(): Promise<void> {
-  startProofStatusServer(config.statusPort, config.statusOrigin);
-  log(`read-only proof status http://0.0.0.0:${config.statusPort}`);
-  const sepolia = new JsonRpcProvider(config.sepoliaRpc);
-  const creditcoin = new JsonRpcProvider(config.creditcoinRpc);
-  const wallet = new Wallet(config.workerKey, creditcoin);
-
-  const chainKey =
-    config.sourceChainKey ?? (await resolveSourceChainKey(creditcoin, config.sepoliaChainId));
-
-  const consumer = new Contract(config.proofConsumer, PROOF_CONSUMER_ABI, wallet);
-
-  // The consumer was deployed against one chainKey. If the worker resolved a
-  // different one, every proof would be built for the wrong source chain and
-  // rejected — better to say so now than to fail obscurely later.
-  const onChainKey = Number(await consumer.getFunction('sourceChainKey')());
-  if (onChainKey !== chainKey) {
-    throw new Error(
-      `chainKey mismatch: ProofConsumer was deployed with ${onChainKey}, ` +
-        `but Sepolia resolves to ${chainKey}. Redeploy the consumer or fix SOURCE_CHAIN_KEY.`,
-    );
+  const restored = await loadWorkerState(config.statePath);
+  if (restored) {
+    for (const pair of restored.pairs) pairs.set(keyOf(pair.assetId, pair.n), pair);
   }
+  let cursor = 0;
+  const stateStore = createWorkerStateStore(config.statePath, restored?.events ?? [], () => ({
+    cursor,
+    pairs: [...pairs.values()],
+  }));
+  startProofStatusServer(config.statusPort, config.statusOrigin, stateStore.events);
+  log(`read-only proof status http://0.0.0.0:${config.statusPort}`);
+  const sepolia = new JsonRpcProvider(
+    config.sepoliaRpc,
+    { chainId: config.sepoliaChainId, name: 'sepolia' },
+    { staticNetwork: true },
+  );
+  const creditcoin = new JsonRpcProvider(
+    config.creditcoinRpc,
+    { chainId: config.creditcoinChainId, name: 'creditcoin-testnet' },
+    { staticNetwork: true },
+  );
 
-  const builder = new proofProvider.service.ProofBuilder(chainKey, config.proofBuilderUrl);
+  const { wallet, chainKey, consumer } = await withRetry('startup chain configuration', async () => {
+    await Promise.all([sepolia.getBlockNumber(), creditcoin.getBlockNumber()]);
+    const nextWallet = new Wallet(config.workerKey, creditcoin);
+    const nextChainKey =
+      config.sourceChainKey ?? (await resolveSourceChainKey(creditcoin, config.sepoliaChainId));
+    const nextConsumer = new Contract(config.proofConsumer, PROOF_CONSUMER_ABI, nextWallet);
+    const onChainKey = Number(await nextConsumer.getFunction('sourceChainKey')());
+    if (onChainKey !== nextChainKey) {
+      throw new Error(
+        `chainKey mismatch: ProofConsumer was deployed with ${onChainKey}, ` +
+          `but Sepolia resolves to ${nextChainKey}. Redeploy the consumer or fix SOURCE_CHAIN_KEY.`,
+      );
+    }
+    return { wallet: nextWallet, chainKey: nextChainKey, consumer: nextConsumer };
+  });
+
+  const builder: ProofBuilderLike = config.proofBuilderTransport === 'curl'
+    ? new CurlProofBuilder(chainKey, config.proofBuilderUrl, config.proofBuilderTimeoutMs)
+    : new proofProvider.service.ProofBuilder(
+      chainKey,
+      config.proofBuilderUrl,
+      config.proofBuilderTimeoutMs,
+    );
 
   const paySink = new Contract(config.paySink, PAY_SINK_ABI, sepolia);
   const shopAck = new Contract(config.shopAck, SHOP_ACK_ABI, sepolia);
 
   const latest = await sepolia.getBlockNumber();
-  let cursor = config.fromBlock > 0 ? config.fromBlock : latest;
+  cursor = restored?.cursor && restored.cursor > 0
+    ? restored.cursor
+    : config.fromBlock > 0
+      ? config.fromBlock
+      : latest;
 
   log(`relia worker up`);
   log(`  sepolia      ${config.paySink} / ${config.shopAck}`);
@@ -78,14 +108,16 @@ async function main(): Promise<void> {
 
   for (;;) {
     try {
+      await drain(builder, consumer, wallet, chainKey, stateStore.markDirty);
       const head = await sepolia.getBlockNumber();
       if (head >= cursor) {
-        await scan(paySink, shopAck, cursor, head);
-        cursor = head + 1;
+        const to = Math.min(head, cursor + config.scanChunkBlocks - 1);
+        await scan(paySink, shopAck, cursor, to);
+        cursor = to + 1;
+        stateStore.markDirty();
       }
-      await drain(builder, consumer, chainKey);
     } catch (e) {
-      log('loop error:', e instanceof Error ? e.message : String(e));
+      log('loop error:', describeError(e));
     }
     await sleep(config.pollIntervalMs);
   }
@@ -114,6 +146,17 @@ function record(ev: Log & { args: unknown[] }, kind: 'pay' | 'ack'): void {
   const k = keyOf(assetId, n);
 
   const pair = pairs.get(k) ?? { assetId, n };
+  const previousHash = pair[kind]?.txHash?.toLowerCase();
+  const nextHash = ev.transactionHash.toLowerCase();
+  const changed = Boolean(previousHash && previousHash !== nextHash);
+
+  if (changed) {
+    pair.done = false;
+    pair.proofTxHash = undefined;
+    pair.proofRetryAfter = undefined;
+    if (kind === 'pay') pair.ack = undefined;
+  }
+
   pair[kind] = { txHash: ev.transactionHash, blockNumber: ev.blockNumber };
   pairs.set(k, pair);
 
@@ -125,16 +168,24 @@ function record(ev: Log & { args: unknown[] }, kind: 'pay' | 'ack'): void {
 }
 
 async function drain(
-  builder: InstanceType<typeof proofProvider.service.ProofBuilder>,
+  builder: ProofBuilderLike,
   consumer: Contract,
+  wallet: Wallet,
   chainKey: number,
+  markDirty: () => void,
 ): Promise<void> {
   for (const [k, pair] of pairs) {
     if (pair.done || !pair.pay || !pair.ack) continue;
+    if (pair.proofRetryAfter && Date.now() < pair.proofRetryAfter) continue;
 
     try {
-      await submit(builder, consumer, chainKey, pair);
+      stage('proof_queued', pair.assetId, pair.n, {
+        payTx: pair.pay.txHash,
+        ackTx: pair.ack.txHash,
+      });
+      await submit(builder, consumer, wallet, chainKey, pair);
       pair.done = true;
+      markDirty();
     } catch (e) {
       const refusal = decodeRefusal(e);
 
@@ -143,13 +194,21 @@ async function drain(
         // just burn gas on the same answer.
         failure('verified', pair.assetId, pair.n, refusal.sentence, refusal.name);
         pair.done = true;
+        markDirty();
         continue;
       }
 
       const msg = e instanceof Error ? e.message : String(e);
-      if (/timeout|Timeout/.test(msg)) {
+      if (/proof transaction already submitted; waiting/i.test(msg)) {
+        log(`proof already submitted for ${k}; waiting for Creditcoin receipt`);
+        continue;
+      }
+      if (/timeout|Timeout|continuity proof does not match|proof transaction .* reverted/i.test(msg)) {
         // The attestation window is minutes long by design. Not a crash.
-        log(`attestation not ready for ${k}; will retry next pass`);
+        log(`attestation/proof checkpoint not ready for ${k}; will retry`);
+        pair.proofTxHash = undefined;
+        pair.proofRetryAfter = Date.now() + Math.max(config.pollIntervalMs, 60_000);
+        markDirty();
         failure('attested', pair.assetId, pair.n, 'attestation not ready yet, retrying');
         continue;
       }
@@ -160,8 +219,9 @@ async function drain(
 }
 
 async function submit(
-  builder: InstanceType<typeof proofProvider.service.ProofBuilder>,
+  builder: ProofBuilderLike,
   consumer: Contract,
+  wallet: Wallet,
   chainKey: number,
   pair: Pair,
 ): Promise<void> {
@@ -173,6 +233,24 @@ async function submit(
   const isConsumed = consumer.getFunction('consumed');
   if ((await isConsumed(pay.txHash)) || (await isConsumed(ack.txHash))) {
     stage('verified', assetId, n, { alreadyConsumed: true, payTx: pay.txHash, ackTx: ack.txHash });
+    return;
+  }
+
+  if (pair.proofTxHash) {
+    stage('proof_submitted', assetId, n, { creditcoinTx: pair.proofTxHash });
+    const pendingReceipt = await consumer.runner?.provider?.getTransactionReceipt(pair.proofTxHash);
+    if (!pendingReceipt) throw new Error('proof transaction already submitted; waiting for Creditcoin receipt');
+    if (pendingReceipt.status !== 1) {
+      const revertedHash = pair.proofTxHash;
+      pair.proofTxHash = undefined;
+      throw new Error(`proof transaction ${revertedHash} reverted on Creditcoin`);
+    }
+    stage('verified', assetId, n, { creditcoinTx: pair.proofTxHash, block: pendingReceipt.blockNumber ?? null });
+    stage('title_ticked', assetId, n, {
+      creditcoinTx: pair.proofTxHash,
+      payTx: pay.txHash,
+      ackTx: ack.txHash,
+    });
     return;
   }
 
@@ -199,7 +277,16 @@ async function submit(
     continuityRoots: continuity.roots.length,
   });
 
-  const tx = await consumer.getFunction('consume')(payQ, ackQ, continuity);
+  const data = consumer.interface.encodeFunctionData('consume', [payQ, ackQ, continuity]);
+  await consumer.getFunction('consume').staticCall(payQ, ackQ, continuity);
+
+  const tx = await wallet.sendTransaction({
+    to: await consumer.getAddress(),
+    data,
+    gasLimit: config.consumeGasLimit,
+  });
+  pair.proofTxHash = tx.hash;
+  stage('proof_submitted', assetId, n, { creditcoinTx: tx.hash });
   const receipt = await tx.wait();
 
   stage('verified', assetId, n, { creditcoinTx: tx.hash, block: receipt?.blockNumber ?? null });
@@ -271,7 +358,28 @@ function shapeBatch(
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+async function withRetry<T>(label: string, run: () => Promise<T>): Promise<T> {
+  for (let attempt = 1;; attempt += 1) {
+    try {
+      return await run();
+    } catch (error) {
+      if (attempt >= 20) throw error;
+      log(`${label} failed on attempt ${attempt}; retrying:`, describeError(error));
+      await sleep(Math.min(30_000, attempt * 2_000));
+    }
+  }
+}
+
+function describeError(error: unknown): string {
+  if (error instanceof Error) return error.message || error.stack || error.name;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
 main().catch((e) => {
-  log('fatal:', e instanceof Error ? e.message : String(e));
+  log('fatal:', describeError(e));
   process.exit(1);
 });

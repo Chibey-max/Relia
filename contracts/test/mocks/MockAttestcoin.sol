@@ -7,7 +7,10 @@ import {
     MerkleProof,
     ContinuityProof,
     Type2Transaction,
+    Type4Transaction,
     Type2Fields,
+    Type4Fields,
+    AuthorizationListEntry,
     CommonTx,
     AccessListEntry,
     Receipt,
@@ -83,6 +86,24 @@ contract LocalEvmV1Decoder is IEvmV1Decoder {
         t.receipt = _decodeReceipt(chunks[2]);
     }
 
+    function decodeTransactionType4(bytes calldata encodedTx)
+        external
+        pure
+        override
+        returns (Type4Transaction memory t)
+    {
+        (uint8 txType, bytes[] memory chunks) = abi.decode(encodedTx, (uint8, bytes[]));
+        require(txType == 4, "not type 4");
+        require(chunks.length == 4, "bad chunk count");
+
+        t.commonTx = _decodeCommon(chunks[0]);
+        (t.type4.chainId, t.type4.maxPriorityFeePerGas, t.type4.maxFeePerGas, t.type4.accessList) =
+            abi.decode(chunks[1], (uint64, uint128, uint128, AccessListEntry[]));
+        (t.type4.authorizationList, t.type4.yParity, t.type4.r, t.type4.s) =
+            abi.decode(chunks[2], (AuthorizationListEntry[], uint8, bytes32, bytes32));
+        t.receipt = _decodeReceipt(chunks[3]);
+    }
+
     function _decodeCommon(bytes memory chunk) internal pure returns (CommonTx memory c) {
         (c.nonce, c.gasLimit, c.from, c.toIsNull, c.to, c.value, c.data) =
             abi.decode(chunk, (uint64, uint64, address, bool, address, uint256, bytes));
@@ -141,5 +162,23 @@ library AttestcoinEncoder {
             abi.encode(receipt.receiptStatus, receipt.receiptGasUsed, receipt.receiptLogs, receipt.receiptLogsBloom);
 
         return abi.encode(uint8(2), chunks);
+    }
+
+    function encodeType4(CommonTx memory common, Type4Fields memory t4, Receipt memory receipt)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes[] memory chunks = new bytes[](4);
+
+        chunks[0] = abi.encode(
+            common.nonce, common.gasLimit, common.from, common.toIsNull, common.to, common.value, common.data
+        );
+        chunks[1] = abi.encode(t4.chainId, t4.maxPriorityFeePerGas, t4.maxFeePerGas, t4.accessList);
+        chunks[2] = abi.encode(t4.authorizationList, t4.yParity, t4.r, t4.s);
+        chunks[3] =
+            abi.encode(receipt.receiptStatus, receipt.receiptGasUsed, receipt.receiptLogs, receipt.receiptLogsBloom);
+
+        return abi.encode(uint8(4), chunks);
     }
 }

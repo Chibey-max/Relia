@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { explainError } from '@/lib/errors';
 import { connectWallet, disconnectWallet, ensureChain, getInjectedProvider, readWallet, shortAddress, walletChains } from '@/lib/wallet';
 import { CopyButton } from '@/components/CopyButton';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 function chainLabel(chainId: number | null): string {
   if (chainId === walletChains.sepolia.id) return 'Sepolia';
@@ -132,17 +133,17 @@ export function WalletConnect() {
   }
 
   const pending = phase === 'detecting' || phase === 'opening' || phase === 'approval' || phase === 'switching';
-  const buttonLabel = phase === 'detecting' ? 'Detecting wallet…' : phase === 'opening' ? 'Opening wallet…' : phase === 'approval' ? 'Waiting for approval…' : phase === 'switching' ? 'Switching network…' : phase === 'unsupported' ? 'Wallet unavailable' : phase === 'error' ? 'Try wallet again' : 'Connect wallet';
+  const buttonLabel = phase === 'detecting' ? 'Detecting wallet...' : phase === 'opening' ? 'Opening wallet...' : phase === 'approval' ? 'Waiting for approval...' : phase === 'switching' ? 'Switching network...' : phase === 'unsupported' ? 'Wallet unavailable' : phase === 'error' ? 'Try wallet again' : 'Connect wallet';
 
   return (
     <div className={`wallet-widget ${isPublicRead ? 'wallet-widget-public' : 'wallet-widget-write'} ${wrongNetwork ? 'wallet-widget-wrong-network' : ''}`}>
       {account && !pending ? (
         <details className="wallet-menu">
-          <summary className="wallet-identity" title={`${account} · ${chainLabel(chainId)}`} aria-label={`Wallet ${shortAddress(account)}, ${wrongNetwork ? `wrong network, expected ${expectedChain?.name}` : chainLabel(chainId)}`}>
+          <summary className="wallet-identity" title={`${account} on ${chainLabel(chainId)}`} aria-label={`Wallet ${shortAddress(account)}, ${wrongNetwork ? `wrong network, expected ${expectedChain?.name}` : chainLabel(chainId)}`}>
             <span className="wallet-live-dot" aria-hidden="true" />
             <span>{shortAddress(account)}</span>
             <span className="wallet-network">{wrongNetwork ? 'Wrong network' : chainLabel(chainId)}</span>
-            <span className="wallet-chevron" aria-hidden="true">⌄</span>
+            <MaterialIcon name="expand_more" className="wallet-chevron" />
           </summary>
           <div className="wallet-menu-panel">
             <div className="wallet-menu-head"><span className="type-label">CONNECTED WALLET</span><code>{account}</code></div>

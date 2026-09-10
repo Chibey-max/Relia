@@ -8,6 +8,7 @@ import { ErrorNotice } from '@/components/ErrorNotice';
 import { LoadingMessage, TitleSkeleton } from '@/components/LoadingUI';
 import { useLoadingTiming } from '@/lib/useLoadingTiming';
 import { Badge, RecordStateBadge } from '@/components/ui';
+import { MaterialIcon } from '@/components/MaterialIcon';
 import { RECORD_STATES, recordStateFromStatus, type RecordState } from '@/lib/recordStates';
 import { TaskSteps } from '@/components/TaskSteps';
 import { loadListedAssets, shortId, type ListedAsset } from '@/lib/assets';
@@ -96,21 +97,21 @@ export default function TitlePage() {
       <div className="task-layout title-task-layout" data-reveal>
         <section className="lookup-panel">
           <div className="task-panel-heading"><span className="task-step">01</span><div><h2>Find a title</h2><p>The lookup stays public and does not request a signature.</p></div></div>
-          <label className="field full"><span>Listed asset</span><select value={assets.some((asset) => asset.assetId === assetId) ? assetId : ''} onChange={(event) => setAssetId(event.target.value)}><option value="">{assets.length ? 'Choose a public title…' : 'No listed assets loaded'}</option>{assets.map((asset) => <option value={asset.assetId} key={asset.assetId}>{ASSET_KINDS[asset.kind] ?? `Asset ${asset.kind}`} · {shortId(asset.assetId)} · buyer {asset.buyer.slice(0, 8)}…</option>)}</select></label>
+          <label className="field full"><span>Listed asset</span><select value={assets.some((asset) => asset.assetId === assetId) ? assetId : ''} onChange={(event) => setAssetId(event.target.value)}><option value="">{assets.length ? 'Choose a public title...' : 'No listed assets loaded'}</option>{assets.map((asset) => <option value={asset.assetId} key={asset.assetId}>{ASSET_KINDS[asset.kind] ?? `Asset ${asset.kind}`} | {shortId(asset.assetId)} | buyer {asset.buyer.slice(0, 8)}...</option>)}</select></label>
           {assetListError != null && <ErrorNotice error={assetListError} title="Could not load the asset picker" onRetry={() => { setAssetListError(null); loadListedAssets().then(setAssets).catch(setAssetListError); }} />}
-          <label className="field full"><span>Creditcoin asset ID</span><input aria-describedby="asset-id-help" aria-invalid={assetId.length > 0 && !validAssetId} placeholder="0x…" value={assetId} onChange={(e) => setAssetId(e.target.value.trim())} /></label>
+          <label className="field full"><span>Creditcoin asset ID</span><input aria-describedby="asset-id-help" aria-invalid={assetId.length > 0 && !validAssetId} placeholder="0x..." value={assetId} onChange={(e) => setAssetId(e.target.value.trim())} /></label>
           <p id="asset-id-help" className={assetId.length > 0 && !validAssetId ? 'field-error' : 'field-help'}>{assetId.length > 0 && !validAssetId ? 'Enter exactly 32 bytes: 0x followed by 64 hexadecimal characters.' : 'A 32-byte identifier beginning with 0x.'}</p>
-          {validAssetId && <Link className="field-record-link" href={`/assets/${assetId}`}>Open canonical asset record →</Link>}
+          {validAssetId && <Link className="field-record-link" href={`/assets/${assetId}`}>Open canonical asset record <MaterialIcon name="arrow_forward" /></Link>}
         </section>
         <aside className="task-panel task-review title-read-summary">
-          <div className="task-panel-heading"><span className="task-step task-step-note">↓</span><div><h2>Read summary</h2><p>What this lookup will do.</p></div></div>
+          <div className="task-panel-heading"><span className="task-step task-step-note"><MaterialIcon name="keyboard_arrow_down" /></span><div><h2>Read summary</h2><p>What this lookup will do.</p></div></div>
           <dl className="transaction-summary-list"><div><dt>Network</dt><dd>Creditcoin</dd></div><div><dt>Wallet</dt><dd>Not required</dd></div><div><dt>Cost</dt><dd>Free public read</dd></div><div><dt>Result</dt><dd>12 title slices</dd></div></dl>
         </aside>
       </div>
 
       {loading && (
         <section className="title-loading-region" aria-busy="true">
-          {timing.show && <><LoadingMessage slow={timing.slow} network="Creditcoin">Reading 12 title slices from Creditcoin…</LoadingMessage><TitleSkeleton /></>}
+          {timing.show && <><LoadingMessage slow={timing.slow} network="Creditcoin">Reading 12 title slices from Creditcoin...</LoadingMessage><TitleSkeleton /></>}
           {timing.prolonged && <button className="secondary loading-retry" onClick={() => setRetryKey((key) => key + 1)}>Retry title read</button>}
         </section>
       )}
@@ -123,10 +124,10 @@ export default function TitlePage() {
           <div className="title-summary">
             <div>
               <div className="title-progress-value">{filled} <span className="muted-text title-progress-context">of 12 slices proven</span></div>
-              <div className="aside-note title-summary-note">{cleared ? 'Cleared — the pass is transferable.' : 'Soulbound until all twelve are proven.'}</div>
+              <div className="aside-note title-summary-note">{cleared ? 'Cleared, the pass is transferable.' : 'Soulbound until all twelve are proven.'}</div>
             </div>
             <div className="title-summary-actions">
-              <Badge tone={cleared ? 'live' : 'neutral'} symbol={cleared ? '✓' : '•'}>{cleared ? 'Cleared' : 'Soulbound'}</Badge>
+              <Badge tone={cleared ? 'live' : 'neutral'} symbol={cleared ? 'check' : 'circle'}>{cleared ? 'Cleared' : 'Soulbound'}</Badge>
               <Link className="button ui-button ui-button-primary ui-button-compact" href={`/title/${assetId}`}>Manage ownership</Link>
               <Link className="secondary" href={`/assets/${assetId}`}>Open full asset record</Link>
             </div>
@@ -144,7 +145,7 @@ export default function TitlePage() {
                   <p className="slice-state-meaning">{definition.meaning}</p>
                   {hasPayment ? (
                     <Link className="slice-action" href={`/verify/${cell.payTx}`}>
-                      {cell.state === 'live' ? 'Open receipt →' : 'Inspect payment →'}
+	                      {cell.state === 'live' ? 'Open receipt' : 'Inspect payment'} <MaterialIcon name="arrow_forward" />
                     </Link>
                   ) : (
                     <div className="muted-text slice-action">{definition.nextAction}</div>
@@ -155,7 +156,7 @@ export default function TitlePage() {
           </div>
 
           <div className="inline-guidance title-guidance">
-            <span aria-hidden="true">→</span><p>
+	            <MaterialIcon name="arrow_forward" /><p>
             <strong>Why it cannot move yet.</strong> A transfer before all twelve slices are proven would hand over a
             title that is not paid for. <code className="mono">Soulbound</code> is the rule that refuses it.
             </p>

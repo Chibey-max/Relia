@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 export interface TaskStep {
   label: string;
@@ -12,7 +13,7 @@ export function TaskSteps({ steps, current }: { steps: TaskStep[]; current: numb
         const state = index < current ? 'done' : index === current ? 'active' : 'pending';
         return (
           <li className={state} aria-current={state === 'active' ? 'step' : undefined} key={step.label}>
-            <span className="task-stepper-mark" aria-hidden="true">{state === 'done' ? '✓' : String(index + 1).padStart(2, '0')}</span>
+            <span className="task-stepper-mark" aria-hidden="true">{state === 'done' ? <MaterialIcon name="check" /> : String(index + 1).padStart(2, '0')}</span>
             <span><strong>{step.label}</strong>{step.detail && <small>{step.detail}</small>}</span>
           </li>
         );

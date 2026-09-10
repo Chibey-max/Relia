@@ -56,8 +56,8 @@ try {
           const mode = new URLSearchParams(location.search).get('__c7mock');
           if (mode === 'offline') return Promise.reject(new TypeError('worker unavailable'));
           let events = [event('sepolia_mined', { payTx, block: 100 })];
-          if (mode === 'refused') events = [...events, event('ack_located', { ackTx, block: 101 }), event('attested', { height: 101 }), event('verified', {}, { error: 'The installment amount is below the required amount.', rule: 'UnderPaid' })];
-          if (mode === 'complete') events = [...events, event('ack_located', { ackTx, block: 101 }), event('attested', { height: 101 }), event('proof_generated', { continuityRoots: 2 }), event('verified', { creditcoinTx, block: 200 }), event('title_ticked', { payTx, ackTx, creditcoinTx })];
+          if (mode === 'refused') events = [...events, event('ack_located', { ackTx, block: 101 }), event('proof_queued', { payTx, ackTx }), event('attested', { height: 101 }), event('verified', {}, { error: 'The installment amount is below the required amount.', rule: 'UnderPaid' })];
+          if (mode === 'complete') events = [...events, event('ack_located', { ackTx, block: 101 }), event('proof_queued', { payTx, ackTx }), event('attested', { height: 101 }), event('proof_generated', { continuityRoots: 2 }), event('proof_submitted', { creditcoinTx }), event('verified', { creditcoinTx, block: 200 }), event('title_ticked', { payTx, ackTx, creditcoinTx })];
           return Promise.resolve(new Response(JSON.stringify({ online: true, updatedAt: new Date().toISOString(), events }), { status: 200, headers: { 'content-type': 'application/json' } }));
         }
         return originalFetch(input, init);
@@ -68,14 +68,14 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 950, deviceScaleFactor: 1, mobile: false });
   const base = `${origin}/send?assetId=${assetId}&slice=1`;
   await navigate(`${base}&__c7mock=pending`);
-  const pendingState = await evaluate(`(() => { const panel = document.querySelector('.proof-status-panel'); const steps = [...panel.querySelectorAll('.proof-status-steps li')]; return { panel: Boolean(panel), fiveSteps: steps.length === 5, paymentDone: steps[0].dataset.state === 'done', ackActive: steps[1].dataset.state === 'active', pendingCopy: panel.innerText.includes('Acknowledgement pending'), boundary: panel.innerText.includes('ProofConsumer.consume(...)') && panel.innerText.includes('proveShortfallDispute(...)'), oneControl: panel.querySelectorAll('.proof-status-tools button').length === 1, paymentLink: Boolean(panel.querySelector('a[href*="sepolia.etherscan.io"]')) }; })()`);
+  const pendingState = await evaluate(`(() => { const panel = document.querySelector('.proof-status-panel'); const steps = [...panel.querySelectorAll('.proof-status-steps li')]; return { panel: Boolean(panel), sixSteps: steps.length === 6, paymentDone: steps[0].dataset.state === 'done', ackActive: steps[1].dataset.state === 'active', pendingCopy: panel.innerText.includes('Acknowledgement pending'), boundary: panel.innerText.includes('ProofConsumer.consume(...)') && panel.innerText.includes('proveShortfallDispute(...)'), oneControl: panel.querySelectorAll('.proof-status-tools button').length === 1, paymentLink: Boolean(panel.querySelector('a[href*="sepolia.etherscan.io"]')) }; })()`);
   const beforeRefresh = await evaluate(`window.__c7Requests`);
   await evaluate(`document.querySelector('.proof-status-tools button').click()`);
   await delay(700);
   const manualRefresh = await evaluate(`window.__c7Requests > ${beforeRefresh}`);
 
   await navigate(`${base}&__c7mock=refused`);
-  const refused = await evaluate(`(() => { const panel = document.querySelector('.proof-status-panel'); return { rule: panel.innerText.includes('Proof refused · UnderPaid'), reason: panel.innerText.includes('below the required amount'), distinction: panel.innerText.includes('not a pending acknowledgement'), failedStage: panel.querySelectorAll('.proof-status-steps li')[3].dataset.state === 'failed' }; })()`);
+  const refused = await evaluate(`(() => { const panel = document.querySelector('.proof-status-panel'); return { rule: panel.innerText.includes('Proof refused · UnderPaid'), reason: panel.innerText.includes('below the required amount'), distinction: panel.innerText.includes('not a pending acknowledgement'), failedStage: panel.querySelectorAll('.proof-status-steps li')[4].dataset.state === 'failed' }; })()`);
 
   await navigate(`${base}&__c7mock=complete`);
   const complete = await evaluate(`(() => { const panel = document.querySelector('.proof-status-panel'); const steps = [...panel.querySelectorAll('.proof-status-steps li')]; return { allDone: steps.every((step) => step.dataset.state === 'done'), evidence: panel.querySelectorAll('.proof-status-evidence .identifier-field').length === 3, paymentLink: Boolean(panel.querySelector('a[href*="sepolia.etherscan.io/tx/"]')), proofLink: Boolean(panel.querySelector('a[href*="creditcoin-testnet.blockscout.com/tx/"]')), noSubmit: ![...panel.querySelectorAll('button')].some((button) => /submit|generate|prove/i.test(button.innerText)) }; })()`);
@@ -93,5 +93,5 @@ try {
 } finally {
   socket?.close();
   chrome.kill('SIGTERM');
-  await rm(profile, { recursive: true, force: true });
+  await rm(profile, { recursive: true, force: true, maxRetries: 3, retryDelay: 150 });
 }

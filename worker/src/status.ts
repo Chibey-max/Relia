@@ -27,8 +27,12 @@ function safeForPublic(event: PublicStageEvent): PublicStageEvent {
  * A deliberately read-only view of the worker's public progress.
  * It exposes no signer address, key material, proof payload, or submission route.
  */
-export function startProofStatusServer(port: number, allowedOrigin: string): Server {
-  const events: PublicStageEvent[] = [];
+export function startProofStatusServer(
+  port: number,
+  allowedOrigin: string,
+  initialEvents: PublicStageEvent[] = [],
+): Server {
+  const events: PublicStageEvent[] = initialEvents.slice(-MAX_EVENTS);
   subscribeToStageEvents((event) => {
     events.push(event);
     if (events.length > MAX_EVENTS) events.splice(0, events.length - MAX_EVENTS);

@@ -35,6 +35,8 @@ export const REFUSAL_ABI = [
   'error AckDoesNotCitePayment(bytes32 cited, bytes32 actual)',
   'error AlreadyConsumed(bytes32 txHash)',
   'error WindowClosed(bytes32 assetId, uint8 n, uint64 windowEnd, uint256 nowTs)',
+  'error SliceAlreadyResolved(bytes32 assetId, uint8 n, uint8 status)',
+  'error SliceAlreadyTicked(bytes32 assetId, uint8 n)',
   'error SameTransaction(bytes32 txHash)',
   'error Rel1Malformed(uint256 length)',
   'error Rel1BadVersion(bytes4 found)',

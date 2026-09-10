@@ -13,6 +13,7 @@ import { useLoadingTiming } from '@/lib/useLoadingTiming';
 import { AddressField, IdentifierField, RecordStateBadge, TransactionField } from '@/components/ui';
 import { RECORD_STATES } from '@/lib/recordStates';
 import { ProofStatusPanel } from '@/components/ProofStatusPanel';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 interface Receipt {
   assetId: string;
@@ -33,7 +34,7 @@ interface Receipt {
 }
 
 function shortAddress(value: string): string {
-  return `${value.slice(0, 6)}…${value.slice(-4)}`;
+  return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
 
 function readableTime(timestamp: bigint | null): string {
@@ -117,12 +118,12 @@ export default function VerifyPage({ params }: { params: Promise<{ payTx: string
   if (loading) return (
     <main className="task-main receipt-page">
       <header className="task-header compact">
-        <div className="eyebrow"><span className="dot" />Public receipt · Creditcoin read</div>
+        <div className="eyebrow"><span className="dot" />Public receipt | Creditcoin read</div>
         <h1>Checking this installment.</h1>
         <p className="lead mono hash">{payTx}</p>
       </header>
       <section className="loading-receipt-region" aria-busy="true">
-        {timing.show && <><LoadingMessage slow={timing.slow} network="Creditcoin">Matching the payment to its public proof…</LoadingMessage><ReceiptSkeleton paymentHash={payTx} /></>}
+        {timing.show && <><LoadingMessage slow={timing.slow} network="Creditcoin">Matching the payment to its public proof...</LoadingMessage><ReceiptSkeleton paymentHash={payTx} /></>}
         {timing.prolonged && <button className="secondary loading-retry" onClick={() => setRetryKey((key) => key + 1)}>Retry receipt read</button>}
       </section>
     </main>
@@ -147,11 +148,11 @@ export default function VerifyPage({ params }: { params: Promise<{ payTx: string
     <main className="task-main receipt-page">
       <header className="receipt-page-verdict">
         <div>
-          <div className="eyebrow"><span className="dot" />Public receipt · live Creditcoin read</div>
-          <span className="verdict-mark" aria-hidden="true">✓</span>
+          <div className="eyebrow"><span className="dot" />Public receipt | live Creditcoin read</div>
+          <span className="verdict-mark" aria-hidden="true"><MaterialIcon name="check" /></span>
           <h1>This installment is proven.</h1>
           <p className="lead">Slice {String(receipt.n).padStart(2, '0')} of 12 for asset {shortId(receipt.assetId)} belongs to buyer {shortAddress(receipt.buyer)}. Its payment and shop confirmation match.</p>
-          <a className="receipt-source-jump" href="#source-facts">Inspect the source records <span aria-hidden="true">↓</span></a>
+          <a className="receipt-source-jump" href="#source-facts">Inspect the source records <MaterialIcon name="keyboard_arrow_down" /></a>
         </div>
         <div className="verdict-side">
           <div className="verdict-summary">
@@ -173,15 +174,15 @@ export default function VerifyPage({ params }: { params: Promise<{ payTx: string
 
       <article className="receipt-document" aria-labelledby="receipt-document-title">
         <header className="receipt-document-head">
-          <div><span className="mini-title">RELIA · PUBLIC INSTALLMENT RECORD</span><h2 id="receipt-document-title">Installment receipt</h2><p>Issued from finalized public records. No account or wallet is needed to inspect it.</p></div>
-          <span className="stamp">✓ LIVE</span>
+          <div><span className="mini-title">RELIA | PUBLIC INSTALLMENT RECORD</span><h2 id="receipt-document-title">Installment receipt</h2><p>Issued from finalized public records. No account or wallet is needed to inspect it.</p></div>
+          <span className="stamp"><MaterialIcon name="check" /> LIVE</span>
         </header>
 
         <div className="receipt-table">
           <section className="receipt-panel receipt-panel-summary" aria-labelledby="summary-title">
             <h3 className="mini-title" id="summary-title">What this receipt says</h3>
             <div className="receipt-human-grid">
-              <div><span>State</span><strong>✓ Live</strong><small>{RECORD_STATES.live.meaning}</small></div>
+              <div><span>State</span><strong><MaterialIcon name="check" /> Live</strong><small>{RECORD_STATES.live.meaning}</small></div>
               <div><span>Installment</span><strong>Slice {String(receipt.n).padStart(2, '0')} of 12</strong></div>
               <div><span>Amount</span><strong>{amount} USDC</strong></div>
               <div><span>Belongs to</span><strong>Buyer {shortAddress(receipt.buyer)}</strong></div>
@@ -192,32 +193,32 @@ export default function VerifyPage({ params }: { params: Promise<{ payTx: string
             <h3 className="mini-title" id="identifiers-title">People and asset</h3>
             <div className="receipt-identifier-grid">
               <IdentifierField label="Asset identifier" value={receipt.assetId} kind="identifier" />
-              <AddressField label="Buyer · title owner" value={receipt.buyer} />
-              <AddressField label="Payer · sent the installment" value={receipt.payer} />
-              <AddressField label="Shop · confirmed the installment" value={receipt.shop} />
+              <AddressField label="Buyer | title owner" value={receipt.buyer} />
+              <AddressField label="Payer | sent the installment" value={receipt.payer} />
+              <AddressField label="Shop | confirmed the installment" value={receipt.shop} />
             </div>
             {receipt.payer.toLowerCase() !== receipt.buyer.toLowerCase() && <p className="aside-note receipt-payer-note">Someone else paid for the buyer. The receipt preserves both roles.</p>}
           </section>
 
           <section className="receipt-panel" id="source-facts" aria-labelledby="source-title">
-            <h3 className="mini-title" id="source-title">Source records · Sepolia</h3>
+            <h3 className="mini-title" id="source-title">Source records | Sepolia</h3>
             <p className="receipt-panel-intro">These are the finalized payment and matching shop confirmation behind the verdict.</p>
             <div className="receipt-source-fields">
               <div className="receipt-source-record">
-                <div><strong>Payment recorded</strong><span>{readableTime(receipt.payTimestamp)} · {exactTime(receipt.payTimestamp)} · block {String(receipt.payHeight)}</span></div>
+                <div><strong>Payment recorded</strong><span>{readableTime(receipt.payTimestamp)} | {exactTime(receipt.payTimestamp)} | block {String(receipt.payHeight)}</span></div>
                 <TransactionField label="Payment transaction" value={receipt.payTx} explorerHref={explorers.sepoliaTx(receipt.payTx)} explorerLabel="View payment on Sepolia" />
               </div>
               <div className="receipt-source-record">
-                <div><strong>Shop confirmation recorded</strong><span>{readableTime(receipt.ackTimestamp)} · {exactTime(receipt.ackTimestamp)} · block {String(receipt.ackHeight)}</span></div>
+                <div><strong>Shop confirmation recorded</strong><span>{readableTime(receipt.ackTimestamp)} | {exactTime(receipt.ackTimestamp)} | block {String(receipt.ackHeight)}</span></div>
                 <TransactionField label="Confirmation transaction" value={receipt.ackTx} explorerHref={explorers.sepoliaTx(receipt.ackTx)} explorerLabel="View confirmation on Sepolia" />
               </div>
             </div>
           </section>
 
           <section className="receipt-panel" aria-labelledby="proof-title">
-            <h3 className="mini-title" id="proof-title">Proof record · Creditcoin</h3>
+            <h3 className="mini-title" id="proof-title">Proof record | Creditcoin</h3>
             <p className="receipt-panel-intro">Creditcoin accepted both source records once and made this title slice live.</p>
-            <div className="receipt-proof-time"><strong>Verified {readableTime(receipt.creditcoinTimestamp)}</strong><span>{exactTime(receipt.creditcoinTimestamp)} · block {String(receipt.creditcoinBlock)}</span></div>
+            <div className="receipt-proof-time"><strong>Verified {readableTime(receipt.creditcoinTimestamp)}</strong><span>{exactTime(receipt.creditcoinTimestamp)} | block {String(receipt.creditcoinBlock)}</span></div>
             <div className="receipt-source-fields">
               <TransactionField label="Verification transaction" value={receipt.creditcoinTx} explorerHref={explorers.creditcoinTx(receipt.creditcoinTx)} explorerLabel="View proof on Creditcoin" />
               <AddressField label="Receipt contract" value={addresses.consumer} explorerHref={explorers.creditcoinAddress(addresses.consumer)} explorerLabel="View receipt contract" />
@@ -226,7 +227,7 @@ export default function VerifyPage({ params }: { params: Promise<{ payTx: string
           </section>
 
           <details className="receipt-panel receipt-panel-decoded">
-            <summary>Technical REL1 record <span aria-hidden="true">+</span></summary>
+            <summary>Technical REL1 record <span aria-hidden="true"><MaterialIcon name="add" /></span></summary>
             <dl className="kv receipt-decoded-values">
               <dt>version</dt><dd className="mono">REL1</dd>
               <dt>kind</dt><dd className="mono">payment</dd>

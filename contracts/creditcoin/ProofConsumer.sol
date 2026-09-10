@@ -7,6 +7,7 @@ import {
     MerkleProof,
     ContinuityProof,
     Type2Transaction,
+    Type4Transaction,
     Receipt,
     EvmLog
 } from "./interfaces/IAttestcoin.sol";
@@ -41,6 +42,7 @@ contract ProofConsumer {
     bytes32 public constant ACKED_TOPIC = keccak256("Acked(bytes32,uint8,bytes)");
 
     uint8 internal constant TX_TYPE_EIP1559 = 2;
+    uint8 internal constant TX_TYPE_EIP7702 = 4;
     uint8 internal constant RECEIPT_SUCCESS = 1;
 
     IBlockProver public immutable prover;
@@ -266,31 +268,57 @@ contract ProofConsumer {
         view
         returns (EvmLog memory log, bytes32 txHash)
     {
-        uint8 txType = decoder.getTransactionType(encodedTx);
-        if (txType != TX_TYPE_EIP1559) revert WrongTransactionType(txType);
-
-        Type2Transaction memory t = decoder.decodeTransactionType2(encodedTx);
-
-        txHash = LibTxHash.type2Hash(t.commonTx, t.type2);
+        uint8 txType;
+        Receipt memory receipt;
+        bool mustMatchTopLevelTarget;
+        (txType, receipt, txHash, mustMatchTopLevelTarget) = _decodeSupportedTx(encodedTx, expectedTarget);
 
         // Refusal #1. Checked before anything in the payload is read, so a
         // reverted transaction's logs are never even looked at.
-        if (t.receipt.receiptStatus != RECEIPT_SUCCESS) {
-            revert NotSuccessful(txHash, t.receipt.receiptStatus);
+        if (receipt.receiptStatus != RECEIPT_SUCCESS) {
+            revert NotSuccessful(txHash, receipt.receiptStatus);
         }
 
-        if (t.commonTx.to != expectedTarget) revert WrongTarget(expectedTarget, t.commonTx.to);
-
-        EvmLog[] memory logs = decoder.getLogsByEventSignature(t.receipt, topic);
+        if (!mustMatchTopLevelTarget) revert WrongTransactionType(txType);
 
         // The emitter must be Relia's own contract. A matching topic0 from
-        // some other address proves nothing.
-        for (uint256 i = 0; i < logs.length; i++) {
-            if (logs[i].address_ == expectedTarget) {
-                return (logs[i], txHash);
+        // some other address proves nothing. Scan the decoded receipt locally
+        // instead of calling the decoder's log-filter overload; the deployed
+        // Creditcoin decoder rejects that overload for receipt structs.
+        for (uint256 i = 0; i < receipt.receiptLogs.length; i++) {
+            EvmLog memory candidate = receipt.receiptLogs[i];
+            if (
+                candidate.address_ == expectedTarget
+                    && candidate.topics.length > 0
+                    && candidate.topics[0] == topic
+            ) {
+                return (candidate, txHash);
             }
         }
         revert EventNotFound(topic, expectedTarget);
+    }
+
+    function _decodeSupportedTx(bytes memory encodedTx, address expectedTarget)
+        internal
+        view
+        returns (uint8 txType, Receipt memory receipt, bytes32 txHash, bool supported)
+    {
+        txType = decoder.getTransactionType(encodedTx);
+
+        if (txType == TX_TYPE_EIP1559) {
+            Type2Transaction memory t = decoder.decodeTransactionType2(encodedTx);
+            txHash = LibTxHash.type2Hash(t.commonTx, t.type2);
+            if (t.commonTx.to != expectedTarget) revert WrongTarget(expectedTarget, t.commonTx.to);
+            return (txType, t.receipt, txHash, true);
+        }
+
+        if (txType == TX_TYPE_EIP7702) {
+            Type4Transaction memory t = decoder.decodeTransactionType4(encodedTx);
+            txHash = LibTxHash.type4Hash(t.commonTx, t.type4);
+            return (txType, t.receipt, txHash, true);
+        }
+
+        return (txType, receipt, txHash, false);
     }
 
     function _readPayment(bytes memory encodedTx)

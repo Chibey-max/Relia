@@ -11,15 +11,16 @@ import { AddressField, Badge, Notice, TransactionField } from '@/components/ui';
 import { SignerContext } from '@/components/SignerContext';
 import { useWalletSnapshot } from '@/lib/useWalletSnapshot';
 import { ConfirmWriteAction } from '@/components/ConfirmWriteAction';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 type RegistrationStage = 'idle' | 'wallet' | 'network' | 'signature' | 'confirmation';
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const STAGE_LABELS: Record<Exclude<RegistrationStage, 'idle'>, string> = {
-  wallet: 'Connecting wallet…',
-  network: 'Switching to Sepolia…',
-  signature: 'Waiting for signature…',
-  confirmation: 'Confirming registration…',
+  wallet: 'Connecting wallet...',
+  network: 'Switching to Sepolia...',
+  signature: 'Waiting for signature...',
+  confirmation: 'Confirming registration...',
 };
 
 export function ShopRegistrationPanel({ assetId, expectedShop }: { assetId: Hex; expectedShop: Hex }) {
@@ -82,6 +83,9 @@ export function ShopRegistrationPanel({ assetId, expectedShop }: { assetId: Hex;
       }
 
       const { client, account } = await walletClientFor(walletChains.sepolia, trackWallet);
+      if (account.toLowerCase() !== expectedShop.toLowerCase()) {
+        throw new Error(`NotTheRegisteringShop: the connected account ${account} does not match the Sepolia shop address ${expectedShop} being registered. A shop can only register itself.`);
+      }
       setStage('signature');
       const hash = await client.sendTransaction({
         account,
@@ -115,7 +119,7 @@ export function ShopRegistrationPanel({ assetId, expectedShop }: { assetId: Hex;
 
       <p className="shop-registration-intro">Creditcoin names the shop that later acknowledgements must match. Sepolia stores the same address once, and does not provide a replacement function.</p>
 
-      {loading && <div className="shop-registration-loading" aria-busy="true"><LoadingMessage network="Sepolia">Checking the current shop binding…</LoadingMessage></div>}
+      {loading && <div className="shop-registration-loading" aria-busy="true"><LoadingMessage network="Sepolia">Checking the current shop binding...</LoadingMessage></div>}
       {!loading && readError != null && <ErrorNotice error={readError} title="Could not read the Sepolia shop binding" onRetry={() => setRetryKey((key) => key + 1)} />}
 
       {!loading && !readError && matched && <div className="shop-binding-state shop-binding-matched"><Badge tone="live">Cross-chain match</Badge><div><strong>The expected shop is already registered.</strong><p>No recovery transaction is needed.</p></div></div>}
@@ -124,8 +128,8 @@ export function ShopRegistrationPanel({ assetId, expectedShop }: { assetId: Hex;
 
       {!loading && !readError && unregistered && (
         <div className="shop-binding-state shop-binding-open">
-          <div><Badge tone="due">Not registered on Sepolia</Badge><h3>Finish the asset’s shop binding.</h3><p>This is an immutable first-write. Relia rechecks the Creditcoin record and Sepolia state immediately before opening the wallet.</p></div>
-          <div className="shop-registration-action"><AddressField label="Shop to register" value={expectedShop} explorerHref={explorers.sepoliaAddress(expectedShop)} /><SignerContext account={wallet.account} role="Registration caller" network="Sepolia" contract={addresses.shopAck} /><ConfirmWriteAction title="Register this shop permanently?" consequence="ReliaShopAck accepts the first binding for this asset and provides no replacement method. Relia will recheck both chains before opening the wallet." confirmLabel="Confirm shop registration" loadingLabel={stage === 'idle' ? 'Registering…' : STAGE_LABELS[stage]} onConfirm={register} busy={stage !== 'idle'}><AddressField label="Immutable Sepolia shop" value={expectedShop} /></ConfirmWriteAction><small>Any connected account may submit this testnet registration, but the stored shop must exactly match the Creditcoin terms.</small></div>
+          <div><Badge tone="due">Not registered on Sepolia</Badge><h3>Finish the asset's shop binding.</h3><p>This is an immutable first-write. Relia rechecks the Creditcoin record and Sepolia state immediately before opening the wallet.</p></div>
+          <div className="shop-registration-action"><AddressField label="Shop to register" value={expectedShop} explorerHref={explorers.sepoliaAddress(expectedShop)} /><SignerContext account={wallet.account} requiredSigner={expectedShop} role="Registration caller" network="Sepolia" contract={addresses.shopAck} /><ConfirmWriteAction title="Register this shop permanently?" consequence="ReliaShopAck accepts the first binding for this asset and provides no replacement method. Relia will recheck both chains before opening the wallet." confirmLabel="Confirm shop registration" loadingLabel={stage === 'idle' ? 'Registering...' : STAGE_LABELS[stage]} onConfirm={register} busy={stage !== 'idle'} disabled={Boolean(wallet.account && wallet.account.toLowerCase() !== expectedShop.toLowerCase())}><AddressField label="Immutable Sepolia shop" value={expectedShop} /></ConfirmWriteAction><small>Only the shop's own wallet may submit this registration, and the contract requires the caller to match the address being registered.</small></div>
         </div>
       )}
 
@@ -133,7 +137,7 @@ export function ShopRegistrationPanel({ assetId, expectedShop }: { assetId: Hex;
 
       {actionError != null && <div className="notice-slot"><ErrorNotice error={actionError} title="Shop registration did not complete" onRetry={unregistered ? () => void register() : undefined} /></div>}
       {transaction && <div className="durable-result"><Badge tone="live">Confirmed</Badge><div><strong>Matching shop registered on Sepolia</strong><TransactionField label="Registration transaction" value={transaction} explorerHref={explorers.sepoliaTx(transaction)} explorerLabel="View on Etherscan" /></div></div>}
-      <a className="shop-contract-link" href={explorers.sepoliaAddress(addresses.shopAck)} target="_blank" rel="noreferrer">ReliaShopAck contract ↗</a>
+      <a className="shop-contract-link" href={explorers.sepoliaAddress(addresses.shopAck)} target="_blank" rel="noreferrer">ReliaShopAck contract <MaterialIcon name="open_in_new" /></a>
     </section>
   );
 }

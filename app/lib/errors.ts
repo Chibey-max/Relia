@@ -88,6 +88,15 @@ export function explainError(error: unknown, fallback = 'Something stopped this 
     };
   }
 
+  if (lower.includes('nottheregisteringshop')) {
+    return {
+      title: 'Connected wallet is not that shop',
+      message: 'A shop can only register itself. The connected wallet must match the Sepolia shop address being registered.',
+      action: 'Switch to the shop account shown for this asset, then register again.',
+      tone: 'warn',
+    };
+  }
+
   if (lower.includes('revert')) {
     return {
       title: 'Transaction was not confirmed',

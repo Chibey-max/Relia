@@ -140,5 +140,5 @@ try {
 } finally {
   socket?.close();
   chrome.kill('SIGTERM');
-  await rm(profile, { recursive: true, force: true });
+  await rm(profile, { recursive: true, force: true, maxRetries: 3, retryDelay: 150 });
 }

@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
+import { MaterialIcon } from '@/components/MaterialIcon';
 import { Button } from '@/components/ui/Surface';
 import { Container, Stack } from '@/components/ui/Layout';
 
@@ -8,7 +9,7 @@ export function ProofPath({ active = 0 }: { active?: number }) {
     <div className="loading-proof-path" aria-hidden="true" data-motion-loop>
       {steps.map((step, index) => (
         <div className={index === active ? 'is-active' : index < active ? 'is-done' : ''} key={step}>
-          <i>{index < active ? '✓' : String(index + 1).padStart(2, '0')}</i>
+          <i>{index < active ? <MaterialIcon name="check" /> : String(index + 1).padStart(2, '0')}</i>
           <span>{step}</span>
         </div>
       ))}
@@ -115,7 +116,7 @@ export function RouteLoading() {
         <Stack gap={4}>
           <div className="eyebrow"><span className="dot" />Building the next view</div>
           <h1>Following the proof.</h1>
-          <LoadingMessage>Loading this Relia page…</LoadingMessage>
+          <LoadingMessage>Loading this Relia page...</LoadingMessage>
           <ProofPath active={2} />
         </Stack>
       </Container>

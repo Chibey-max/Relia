@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 export function CopyButton({ value, label = 'Copy' }: { value: string; label?: string }) {
   const [status, setStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
@@ -29,7 +30,7 @@ export function CopyButton({ value, label = 'Copy' }: { value: string; label?: s
   return (
     <>
       <button className="copy-button" type="button" onClick={copy} aria-label={label} data-copy-state={status}>
-        <span aria-hidden="true">{status === 'copied' ? '✓' : status === 'failed' ? '!' : '⧉'}</span>
+        <MaterialIcon name={status === 'copied' ? 'check' : status === 'failed' ? 'priority_high' : 'content_copy'} />
         {status === 'copied' ? 'Copied' : status === 'failed' ? 'Copy failed' : label}
       </button>
       <span className="sr-announcement" role="status" aria-live="polite" aria-atomic="true">

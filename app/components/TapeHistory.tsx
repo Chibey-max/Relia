@@ -10,6 +10,7 @@ import { LoadingMessage, TableSkeleton } from '@/components/LoadingUI';
 import { Badge, Button, DataEmptyState, RecordStateBadge } from '@/components/ui';
 import { RECORD_STATES, recordStateFromStatus, type RecordState } from '@/lib/recordStates';
 import { TableIdentifier } from '@/components/TableIdentifier';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 interface HistoryEntry {
   index: number;
@@ -105,12 +106,12 @@ export function TapeHistory({ assetId }: { assetId?: Hex }) {
     <section className="tape-history" aria-labelledby={assetId ? 'asset-history-title' : 'global-history-title'} data-reveal>
       <div className="tape-history-heading">
         <div><span className="mini-title">APPEND-ONLY AUDIT TRAIL</span><h2 id={assetId ? 'asset-history-title' : 'global-history-title'}>{assetId ? 'How this title reached today.' : 'Latest activity across the tape.'}</h2><p>Old entries remain intact when a slice changes. This view reads the newest bounded page and orders it from earlier to later.</p></div>
-        <div className="tape-history-tools"><Badge tone={stale ? 'due' : 'live'}>{lastUpdated ? stale ? 'Stale snapshot' : 'Fresh snapshot' : 'Waiting for read'}</Badge><Button variant="secondary" size="compact" onClick={() => setRefreshKey((key) => key + 1)} busy={refreshing} busyLabel="Refreshing…">Refresh history</Button></div>
+        <div className="tape-history-tools"><Badge tone={stale ? 'due' : 'live'}>{lastUpdated ? stale ? 'Stale snapshot' : 'Fresh snapshot' : 'Waiting for read'}</Badge><Button variant="secondary" size="compact" onClick={() => setRefreshKey((key) => key + 1)} busy={refreshing} busyLabel="Refreshing..."><MaterialIcon name="refresh" />Refresh history</Button></div>
       </div>
 
-      {loading && <div className="tape-history-loading" aria-busy="true"><LoadingMessage network="Creditcoin">Reading append-only tape entries…</LoadingMessage><TableSkeleton rows={4} columns={3} labels={['State', 'Event', 'Evidence']} /></div>}
+      {loading && <div className="tape-history-loading" aria-busy="true"><LoadingMessage network="Creditcoin">Reading append-only tape entries...</LoadingMessage><TableSkeleton rows={4} columns={3} labels={['State', 'Event', 'Evidence']} /></div>}
       {!loading && error != null && <ErrorNotice error={error} title="Could not read tape history" onRetry={() => setRefreshKey((key) => key + 1)} />}
-      {!loading && error == null && entries.length === 0 && <DataEmptyState symbol="○" title="No history entries yet" body={assetId ? 'This asset exists, but its tape has no indexed transitions.' : 'The configured tape has not recorded any transitions.'} />}
+      {!loading && error == null && entries.length === 0 && <DataEmptyState symbol="radio_button_unchecked" title="No history entries yet" body={assetId ? 'This asset exists, but its tape has no indexed transitions.' : 'The configured tape has not recorded any transitions.'} />}
 
       {!loading && error == null && entries.length > 0 && <>
         <ol className="tape-history-timeline">
@@ -120,7 +121,7 @@ export function TapeHistory({ assetId }: { assetId?: Hex }) {
               <div className="tape-history-rail"><i aria-hidden="true" /><time dateTime={new Date(Number(entry.at) * 1000).toISOString()}>{eventDate(entry.at)} UTC</time></div>
               <article className="tape-history-card">
                 <div className="tape-history-event"><div><span className="tape-history-index">ENTRY {entry.index + 1}</span><h3>{eventVerb(entry.state)}</h3></div>{entry.state ? <RecordStateBadge state={entry.state} /> : <Badge tone="neutral">Unknown</Badge>}</div>
-                <div className="tape-history-context"><span>Slice {String(entry.n).padStart(2, '0')}</span>{!assetId && <Link href={`/assets/${entry.assetId}`}>Open asset →</Link>}</div>
+                <div className="tape-history-context"><span>Slice {String(entry.n).padStart(2, '0')}</span>{!assetId && <Link href={`/assets/${entry.assetId}`}>Open asset <MaterialIcon name="arrow_forward" /></Link>}</div>
                 {definition && <p>{definition.meaning}</p>}
                 {(entry.payTx !== ZERO_HASH || entry.ackTx !== ZERO_HASH) && <div className="tape-history-evidence">
                   {entry.payTx !== ZERO_HASH && <TableIdentifier value={entry.payTx} copyLabel="Copy payment hash" href={`/verify/${entry.payTx}`} actionLabel="Receipt" />}
@@ -131,7 +132,7 @@ export function TapeHistory({ assetId }: { assetId?: Hex }) {
             </li>;
           })}
         </ol>
-        <div className="tape-history-footer"><span>Showing {entries.length} of {total} entries.</span>{remaining > 0 && <Button variant="secondary" onClick={() => setLimit((current) => current + PAGE_SIZE)} busy={refreshing} busyLabel="Loading older entries…">Load {Math.min(PAGE_SIZE, remaining)} older</Button>}</div>
+        <div className="tape-history-footer"><span>Showing {entries.length} of {total} entries.</span>{remaining > 0 && <Button variant="secondary" onClick={() => setLimit((current) => current + PAGE_SIZE)} busy={refreshing} busyLabel="Loading older entries...">Load {Math.min(PAGE_SIZE, remaining)} older</Button>}</div>
       </>}
     </section>
   );

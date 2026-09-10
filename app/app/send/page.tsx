@@ -9,14 +9,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { encodeFunctionData, isAddress, type Hex } from 'viem';
-import { addresses, configuredAssetId, contractConfiguration, explorers, isConfiguredContractAddress, sepoliaChain, sepoliaClient } from '@/lib/chain';
+import { addresses, configuredAssetId, contractConfiguration, creditcoinClient, explorers, isConfiguredContractAddress, sepoliaChain, sepoliaClient } from '@/lib/chain';
 import { loadListedAssets, shortId, type ListedAsset } from '@/lib/assets';
-import { paySinkAbi, shopAckAbi, erc20Abi } from '@/lib/abi';
+import { paySinkAbi, shopAckAbi, erc20Abi, tapeAbi, STATUS_LABELS } from '@/lib/abi';
 import type { StageEvent } from '@/components/PipelineRail';
 import { ProofStatusPanel } from '@/components/ProofStatusPanel';
 import { ErrorNotice } from '@/components/ErrorNotice';
 import { walletClientFor, walletChains } from '@/lib/wallet';
 import { LoadingButton, ProgressStatus } from '@/components/LoadingUI';
+import { MaterialIcon } from '@/components/MaterialIcon';
 import { TaskSteps } from '@/components/TaskSteps';
 import { TransactionField } from '@/components/ui';
 import { ExperienceMode } from '@/components/ExperienceMode';
@@ -30,13 +31,13 @@ type PaymentPhase = 'idle' | 'connecting-wallet' | 'minting-test-usdc' | 'approv
 
 const phaseCopy: Record<PaymentPhase, string> = {
   idle: '',
-  'connecting-wallet': 'Opening wallet…',
-  'minting-test-usdc': 'Preparing test USDC…',
-  'approving-usdc': 'Approving 40.00 USDC…',
+  'connecting-wallet': 'Opening wallet...',
+  'minting-test-usdc': 'Preparing test USDC...',
+  'approving-usdc': 'Approving USDC...',
   'submitting-payment': 'Submit payment in wallet',
-  'confirming-payment': 'Waiting for Sepolia confirmation…',
+  'confirming-payment': 'Waiting for Sepolia confirmation...',
   'submitting-ack': 'Submit acknowledgement in wallet',
-  'confirming-ack': 'Waiting for acknowledgement…',
+  'confirming-ack': 'Waiting for acknowledgement...',
   acknowledged: 'Acknowledgement confirmed',
 };
 
@@ -68,7 +69,9 @@ export default function SendPage() {
   const [n, setN] = useState<number>(1);
   const [shop, setShop] = useState<string>('');
   const [buyer, setBuyer] = useState<string>('');
-  const [amount] = useState<bigint>(40_000_000n);
+  const [amount, setAmount] = useState<bigint>(40_000_000n);
+  const [selectedInstallment, setSelectedInstallment] = useState<bigint | null>(null);
+  const [selectedSliceStatus, setSelectedSliceStatus] = useState<number | null>(null);
 
   const [payTx, setPayTx] = useState<string>('');
   const [submittedPayTx, setSubmittedPayTx] = useState<string>('');
@@ -106,6 +109,11 @@ export default function SendPage() {
     } catch {
       window.localStorage.removeItem(PAYMENT_DRAFT_KEY);
     }
+    if (isConfiguredContractAddress(addresses.paySink)) {
+      publicClient.readContract({ address: addresses.paySink, abi: paySinkAbi, functionName: 'installmentAmount' })
+        .then((value) => setAmount(value as bigint))
+        .catch(() => {});
+    }
     if (!isConfiguredContractAddress(addresses.registry)) return;
     loadListedAssets().then((listedAssets) => {
       setAssets(listedAssets);
@@ -113,6 +121,7 @@ export default function SendPage() {
       if (selected) {
         setShop(selected.shopSepolia);
         setBuyer(selected.buyer);
+        setSelectedInstallment(selected.installment);
       }
     }).catch(setAssetProblem);
   }, []);
@@ -121,6 +130,27 @@ export default function SendPage() {
     if (!submittedPayTx || !/^0x[0-9a-fA-F]{64}$/.test(assetId)) return;
     window.localStorage.setItem(PAYMENT_DRAFT_KEY, JSON.stringify({ assetId, n, shop, buyer, submittedPayTx, payTx, submittedAckTx, ackTx }));
   }, [ackTx, assetId, buyer, n, payTx, shop, submittedAckTx, submittedPayTx]);
+
+  useEffect(() => {
+    if (!/^0x[0-9a-fA-F]{64}$/.test(assetId) || !isConfiguredContractAddress(addresses.tape)) {
+      setSelectedSliceStatus(null);
+      return;
+    }
+
+    let cancelled = false;
+    creditcoinClient.readContract({
+      address: addresses.tape,
+      abi: tapeAbi,
+      functionName: 'sliceOf',
+      args: [assetId as Hex, n],
+    }).then((slice) => {
+      if (!cancelled) setSelectedSliceStatus(Number(slice.status));
+    }).catch(() => {
+      if (!cancelled) setSelectedSliceStatus(null);
+    });
+
+    return () => { cancelled = true; };
+  }, [assetId, n]);
 
   function resetTransaction() {
     setPayTx('');
@@ -140,8 +170,15 @@ export default function SendPage() {
     if (hit) {
       setShop(hit.shopSepolia);
       setBuyer(hit.buyer);
+      setSelectedInstallment(hit.installment);
+    } else {
+      setSelectedInstallment(null);
     }
   }
+
+  const installmentMismatch = selectedInstallment != null && selectedInstallment !== amount;
+  const selectedSliceResolved = selectedSliceStatus != null && selectedSliceStatus !== 1;
+  const selectedSliceLabel = selectedSliceStatus == null ? null : STATUS_LABELS[selectedSliceStatus] ?? 'Unknown';
 
   const preview = `REL1|payment|${assetId || '<assetId>'}|${n}|${shop || '<shop>'}|${buyer || '<buyer>'}|${amount}`;
   const validation = {
@@ -308,7 +345,7 @@ export default function SendPage() {
     <main className="task-main">
       <header className="task-header" data-reveal>
         <div className="eyebrow"><span className="dot" />Write on Sepolia</div>
-        <ExperienceMode tone={liveWriteReady ? 'live' : 'unavailable'}>{liveWriteReady ? 'Live testnet action · wallet required' : 'Live action unavailable · sample explanation remains public'}</ExperienceMode>
+        <ExperienceMode tone={liveWriteReady ? 'live' : 'unavailable'}>{liveWriteReady ? 'Live testnet action | wallet required' : 'Live action unavailable | sample explanation remains public'}</ExperienceMode>
         <h1>Send an installment</h1>
         <p className="lead">Review the record, pay the installment, then let the shop acknowledge the same payment.</p>
         <div className="task-context"><span>1 payment</span><span>1 acknowledgement</span><span>0 bridged funds</span></div>
@@ -324,18 +361,18 @@ export default function SendPage() {
             <label className="field full">
               Asset
               <select value={assetId} onChange={(e) => selectAsset(e.target.value)} onBlur={() => touch('assetId')} aria-invalid={showError('assetId')} aria-describedby={showError('assetId') ? 'asset-select-error' : undefined} disabled={Boolean(submittedPayTx)}>
-                <option value="">{assets.length ? 'Select a listed asset…' : isConfiguredContractAddress(addresses.registry) ? 'No assets listed yet' : 'Live registry is not configured'}</option>
+                <option value="">{assets.length ? 'Select a listed asset...' : isConfiguredContractAddress(addresses.registry) ? 'No assets listed yet' : 'Live registry is not configured'}</option>
                 {assets.map((a) => (
-                  <option key={a.assetId} value={a.assetId}>{shortId(a.assetId)} — buyer {a.buyer.slice(0, 8)}…</option>
+                  <option key={a.assetId} value={a.assetId}>{shortId(a.assetId)} - buyer {a.buyer.slice(0, 8)}...</option>
                 ))}
               </select>
               {showError('assetId') && <small className="field-error" id="asset-select-error">{validation.assetId}</small>}
             </label>
             <label className="field full">
-              …or paste an asset id
+              Or paste an asset id
               <input value={assetId} onChange={(e) => { if (e.target.value.trim() !== assetId) resetTransaction(); setAssetId(e.target.value.trim()); }} onBlur={() => touch('assetId')} aria-invalid={showError('assetId')} aria-describedby={showError('assetId') ? 'asset-id-error' : undefined} disabled={Boolean(submittedPayTx)} />
               {showError('assetId') && <small className="field-error" id="asset-id-error">{validation.assetId}</small>}
-              {/^0x[0-9a-fA-F]{64}$/.test(assetId) && <Link className="field-record-link" href={`/assets/${assetId}`}>Open canonical asset record →</Link>}
+              {/^0x[0-9a-fA-F]{64}$/.test(assetId) && <Link className="field-record-link" href={`/assets/${assetId}`}>Open canonical asset record <MaterialIcon name="arrow_forward" /></Link>}
             </label>
             <label className="field">
               Slice
@@ -345,9 +382,10 @@ export default function SendPage() {
             <label className="field">
               Installment
               <input value={`${(Number(amount) / 1e6).toFixed(2)} USDC`} readOnly />
+              <small className="field-help">This is what the payment contract actually pulls, read from its on-chain `installmentAmount()`, not a client-side guess.</small>
             </label>
             <label className="field full">
-              Shop · Sepolia
+              Shop on Sepolia
               <input value={shop} onChange={(e) => setShop(e.target.value.trim())} onBlur={() => touch('shop')} aria-invalid={showError('shop')} aria-describedby={showError('shop') ? 'shop-error' : undefined} disabled={Boolean(submittedPayTx)} />
               {showError('shop') && <small className="field-error" id="shop-error">{validation.shop}</small>}
             </label>
@@ -358,20 +396,20 @@ export default function SendPage() {
             </label>
           </div>
           <div className="inline-guidance">
-            <span aria-hidden="true">✦</span><p><strong>Paying for someone else?</strong> That is allowed. The receipt records both payer and buyer.</p>
+            <MaterialIcon name="auto_awesome" /><p><strong>Paying for someone else?</strong> That is allowed. The receipt records both payer and buyer.</p>
           </div>
         </section>
 
         <aside className="task-panel task-review transaction-summary" aria-labelledby="review-title">
-          <div className="task-panel-heading"><span className="task-step task-step-note">✎</span><div><h2 id="review-title">Transaction summary</h2><p>Check the human-readable facts before opening a wallet.</p></div></div>
+          <div className="task-panel-heading"><span className="task-step task-step-note"><MaterialIcon name="edit_note" /></span><div><h2 id="review-title">Transaction summary</h2><p>Check the human-readable facts before opening a wallet.</p></div></div>
             <dl className="transaction-summary-list">
               <div><dt>Network</dt><dd>Sepolia</dd></div>
               <div><dt>Installment</dt><dd>{(Number(amount) / 1e6).toFixed(2)} USDC</dd></div>
               <div><dt>Slice</dt><dd>{String(n).padStart(2, '0')} of 12</dd></div>
-              <div><dt>Buyer</dt><dd className="mono">{buyer ? `${buyer.slice(0, 8)}…${buyer.slice(-6)}` : 'Not selected'}</dd></div>
-              <div><dt>Shop</dt><dd className="mono">{shop ? `${shop.slice(0, 8)}…${shop.slice(-6)}` : 'Not selected'}</dd></div>
+              <div><dt>Buyer</dt><dd className="mono">{buyer ? `${buyer.slice(0, 8)}...${buyer.slice(-6)}` : 'Not selected'}</dd></div>
+              <div><dt>Shop</dt><dd className="mono">{shop ? `${shop.slice(0, 8)}...${shop.slice(-6)}` : 'Not selected'}</dd></div>
             </dl>
-            <div className="transaction-requirements" role="group" aria-label="Signing requirements"><strong>Before you sign</strong><span>○ Browser wallet connected</span><span>○ Sepolia network selected</span><span>✶ This test flow prepares and approves USDC after the wallet opens</span></div>
+            <div className="transaction-requirements" role="group" aria-label="Signing requirements"><strong>Before you sign</strong><span><MaterialIcon name="account_balance_wallet" />Browser wallet connected</span><span><MaterialIcon name="hub" />Sepolia network selected</span><span><MaterialIcon name="payments" />This test flow prepares and approves USDC after the wallet opens</span></div>
             <div className="record-preview"><span className="mini-title">REL1 RECORD</span><pre className="rel1-preview">{preview}</pre></div>
         </aside>
       </div>
@@ -381,25 +419,35 @@ export default function SendPage() {
           <div className="action-role-label">BUYER OR PAYER ACTION</div>
           <div className="task-panel-heading"><span className="task-step">02</span><div><h2 id="payment-action-title">Send the installment</h2><p>Any wallet may pay for the named buyer. This action prepares test USDC and submits the payment.</p></div></div>
           <SignerContext account={wallet.account} role="Payment signer" network="Sepolia" contract={addresses.paySink} />
-          <ConfirmWriteAction title={`Pay ${(Number(amount) / 1e6).toFixed(2)} USDC?`} consequence="This sequence mints test USDC, approves the payment contract, and sends the installment to the named shop on Sepolia. The payment cannot be undone by Relia." confirmLabel={`Pay ${(Number(amount) / 1e6).toFixed(2)} USDC`} loadingLabel={phaseCopy[phase] || 'Submitting payment…'} onConfirm={onPay} busy={paymentBusy} disabled={!liveWriteReady || busy || !formValid || Boolean(submittedPayTx)}><div className="confirm-write-facts"><span>Buyer</span><code>{buyer}</code><span>Shop</span><code>{shop}</code><span>Slice {n} of 12</span></div></ConfirmWriteAction>
+          <ConfirmWriteAction title={`Pay ${(Number(amount) / 1e6).toFixed(2)} USDC?`} consequence="This sequence mints test USDC, approves the payment contract, and sends the installment to the named shop on Sepolia. The payment cannot be undone by Relia." confirmLabel={`Pay ${(Number(amount) / 1e6).toFixed(2)} USDC`} loadingLabel={phaseCopy[phase] || 'Submitting payment...'} onConfirm={onPay} busy={paymentBusy} disabled={!liveWriteReady || busy || !formValid || Boolean(submittedPayTx) || installmentMismatch || selectedSliceResolved}><div className="confirm-write-facts"><span>Buyer</span><code>{buyer}</code><span>Shop</span><code>{shop}</code><span>Slice {n} of 12</span></div></ConfirmWriteAction>
           {!liveWriteReady && <p className="field-help action-help">The Sepolia contracts are not configured. This control will not open a wallet.</p>}
           {!formValid && <p className="field-help action-help">Complete the four validated payment fields to continue.</p>}
+          {selectedSliceResolved && (
+            <p className="field-error action-help" role="status">
+              Slice {n} is already {selectedSliceLabel?.toLowerCase()}. Choose a due slice before sending another payment.
+            </p>
+          )}
+          {installmentMismatch && selectedInstallment != null && (
+            <p className="field-error action-help" role="status">
+              This asset was listed for {(Number(selectedInstallment) / 1e6).toFixed(2)} USDC, but the payment contract is fixed at {(Number(amount) / 1e6).toFixed(2)} USDC per slice. Paying here would not match the asset's declared terms, so payment is disabled until the amounts agree.
+            </p>
+          )}
         </section>
         <section className="task-panel transaction-action transaction-action-shop" aria-labelledby="ack-action-title" aria-busy={acknowledgementBusy}>
           <div className="action-role-label">REGISTERED SHOP ACTION</div>
           <div className="task-panel-heading"><span className="task-step">03</span><div><h2 id="ack-action-title">Acknowledge the payment</h2><p>Only the registered shop may cite the confirmed payment.</p></div></div>
           <SignerContext account={wallet.account} requiredSigner={isAddress(shop) ? shop : undefined} role="Acknowledgement signer" network="Sepolia" contract={addresses.shopAck} />
-          <ConfirmWriteAction title="Acknowledge this exact payment?" consequence="The shop acknowledgement is a permanent Sepolia fact citing the payment below. It cannot cite a different payment later for this submission." confirmLabel="Acknowledge payment" loadingLabel={phaseCopy[phase] || 'Submitting acknowledgement…'} onConfirm={onAck} busy={acknowledgementBusy} disabled={!liveWriteReady || busy || !payTx || Boolean(submittedAckTx) || shopSignerMismatch}><TransactionField label="Payment being acknowledged" value={payTx || 'Not available'} explorerHref={payTx ? explorers.sepoliaTx(payTx) : undefined} /></ConfirmWriteAction>
+          <ConfirmWriteAction title="Acknowledge this exact payment?" consequence="The shop acknowledgement is a permanent Sepolia fact citing the payment below. It cannot cite a different payment later for this submission." confirmLabel="Acknowledge payment" loadingLabel={phaseCopy[phase] || 'Submitting acknowledgement...'} onConfirm={onAck} busy={acknowledgementBusy} disabled={!liveWriteReady || busy || !payTx || Boolean(submittedAckTx) || shopSignerMismatch}><TransactionField label="Payment being acknowledged" value={payTx || 'Not available'} explorerHref={payTx ? explorers.sepoliaTx(payTx) : undefined} /></ConfirmWriteAction>
           {!payTx && <p className="field-help action-help">Waiting for a confirmed payment.</p>}
           {shopSignerMismatch && <p className="field-error action-help" role="status">The connected account is not the registered shop. Switch to <code>{shop}</code> before acknowledging.</p>}
         </section>
       </div>
 
-      {phase !== 'idle' && <ProgressStatus label={phaseCopy[phase]} detail={phase === 'acknowledged' ? 'Both Sepolia facts are confirmed. Proof generation is the next real stage.' : 'Keep this page open while the current step finishes.'} />}
+      {phase !== 'idle' && phase !== 'acknowledged' && <ProgressStatus label={phaseCopy[phase]} detail="Keep this page open while the current step finishes." />}
       {(submittedPayTx || submittedAckTx) && (
         <section className="durable-result durable-result-pending transaction-result">
-          <span className="status-badge status-due">○ TITLE DUE</span>
-          <div><strong>{hasAck ? 'Payment and acknowledgement confirmed; proof is next' : payTx ? 'Payment confirmed; acknowledgement is next' : 'Payment submitted; waiting for finality'}</strong><p>A submitted source transaction is not a live title slice. This result is stored in this browser so reloading cannot hide the payment while acknowledgement is pending.</p>{((submittedPayTx && !payTx) || (submittedAckTx && !ackTx)) && <LoadingButton className="secondary" onClick={() => void retryTransactionState()} loading={busy} loadingLabel={phaseCopy[phase] || 'Checking confirmation…'}>Resume confirmation check</LoadingButton>}</div>
+          <span className="status-badge status-due"><MaterialIcon name="radio_button_unchecked" />TITLE DUE</span>
+          <div><strong>{hasAck ? 'Payment and acknowledgement confirmed; proof is next' : payTx ? 'Payment confirmed; acknowledgement is next' : 'Payment submitted; waiting for finality'}</strong><p>A submitted source transaction is not a live title slice. This result is stored in this browser so reloading cannot hide the payment while acknowledgement is pending.</p>{((submittedPayTx && !payTx) || (submittedAckTx && !ackTx)) && <LoadingButton className="secondary" onClick={() => void retryTransactionState()} loading={busy} loadingLabel={phaseCopy[phase] || 'Checking confirmation...'}>Resume confirmation check</LoadingButton>}</div>
           <details className="transaction-technical"><summary>Technical transaction details</summary><div className="transaction-hash-list">{submittedPayTx && <TransactionField label={payTx ? 'Confirmed payment' : 'Submitted payment'} value={submittedPayTx} explorerHref={explorers.sepoliaTx(submittedPayTx)} explorerLabel="View payment on Sepolia" />}{submittedAckTx && <TransactionField label={ackTx ? 'Confirmed acknowledgement' : 'Submitted acknowledgement'} value={submittedAckTx} explorerHref={explorers.sepoliaTx(submittedAckTx)} explorerLabel="View acknowledgement on Sepolia" />}<div className="technical-contracts"><span>PAYMENT CONTRACT</span><code>{addresses.paySink}</code><span>ACK CONTRACT</span><code>{addresses.shopAck}</code><span>CHAIN ID</span><code>{sepoliaChain.id}</code></div></div></details>
         </section>
       )}
@@ -410,9 +458,9 @@ export default function SendPage() {
         <div className="task-panel-heading"><span className="task-step">04</span><div><h2 id="pipeline-title">Payment-to-title progress</h2><p>This rail advances from wallet and confirmed receipt events only. It never uses a timed demo sequence.</p></div></div>
         <div className="live-progress-disclosure"><ExperienceMode tone={liveWriteReady ? 'live' : 'unavailable'}>{liveWriteReady ? 'Live contract progress' : 'Waiting for contract configuration'}</ExperienceMode><span>Submitted means a hash exists. Confirmed means the network returned a successful receipt. Only a confirmed proof can advance the title.</span></div>
         <ol className="transaction-timeline" aria-label="Transaction and proof progress">
-          {TRANSACTION_STAGES.map((label, index) => { const state = transactionStageState(index); return <li className={state} aria-current={state === 'active' ? 'step' : undefined} key={label}><span aria-hidden="true">{state === 'done' ? '✓' : String(index + 1).padStart(2, '0')}</span><div><strong>{label}</strong><small>{state === 'done' ? 'Complete' : state === 'active' ? 'Current stage' : 'Not started'}</small></div></li>; })}
+          {TRANSACTION_STAGES.map((label, index) => { const state = transactionStageState(index); return <li className={state} aria-current={state === 'active' ? 'step' : undefined} key={label}><span aria-hidden="true">{state === 'done' ? <MaterialIcon name="check" /> : String(index + 1).padStart(2, '0')}</span><div><strong>{label}</strong><small>{state === 'done' ? 'Complete' : state === 'active' ? 'Current stage' : 'Not started'}</small></div></li>; })}
         </ol>
-        <div className="pipeline-slot"><ProofStatusPanel assetId={assetId} n={n} payTx={payTx || submittedPayTx} ackTx={ackTx || submittedAckTx} localEvents={events} /></div>
+        <div className="pipeline-slot"><ProofStatusPanel assetId={assetId} n={n} payTx={payTx} ackTx={ackTx} localEvents={events} /></div>
       </section>
     </main>
   );

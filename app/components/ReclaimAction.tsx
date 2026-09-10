@@ -10,6 +10,7 @@ import { ErrorNotice } from '@/components/ErrorNotice';
 import { Badge, Button, IdentifierField, Notice, RecordStateBadge } from '@/components/ui';
 import { LoadingButton, ProgressStatus } from '@/components/LoadingUI';
 import { SignerContext } from '@/components/SignerContext';
+import { MaterialIcon } from '@/components/MaterialIcon';
 import { useWalletSnapshot } from '@/lib/useWalletSnapshot';
 
 type ReclaimStage = 'idle' | 'wallet' | 'network' | 'signature' | 'confirmation';
@@ -114,7 +115,7 @@ export function ReclaimAction({ assetId, n, windowEnd, payTx, paymentProven, onC
       <Button variant="danger" size="compact" onClick={() => { setProblem(null); setOpen(true); }}>Review reclaim</Button>
       {open && <div className="reclaim-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setOpen(false); }}>
         <section className="reclaim-dialog" role="dialog" aria-modal="true" aria-labelledby={`reclaim-title-${n}`}>
-          <button ref={closeRef} className="reclaim-close" type="button" aria-label="Close reclaim review" onClick={() => setOpen(false)} disabled={busy}>×</button>
+          <button ref={closeRef} className="reclaim-close" type="button" aria-label="Close reclaim review" onClick={() => setOpen(false)} disabled={busy}><MaterialIcon name="close" /></button>
           <div className="reclaim-dialog-heading"><div><span className="mini-title">PERMISSIONLESS CONTRACT ACTION</span><h2 id={`reclaim-title-${n}`}>Review slice {n} reclaim.</h2></div><RecordStateBadge state="shortfall" /></div>
           <p className="reclaim-dialog-lead">The current contract allows any caller to submit this transaction. Reclaim changes a genuine Shortfall to Reclaimed; it does not transfer funds or erase the earlier record.</p>
 
@@ -127,18 +128,18 @@ export function ReclaimAction({ assetId, n, windowEnd, payTx, paymentProven, onC
 
           <div className="reclaim-payment-evidence">
             <div><span className="mini-title">PAYMENT EVIDENCE</span><strong>{paymentProven ? 'Payment proof is recorded' : 'No proven payment is recorded'}</strong><p>{paymentProven ? 'A proven payment normally makes this slice Disputed and contract-protected. Review the receipt before continuing.' : 'The settled Shortfall records no proven payment for this window.'}</p></div>
-            {payTx !== ZERO_HASH ? <Link href={`/verify/${payTx}`}>Open payment receipt →</Link> : <Badge tone="neutral">No payment hash</Badge>}
+            {payTx !== ZERO_HASH ? <Link href={`/verify/${payTx}`}>Open payment receipt <MaterialIcon name="arrow_forward" /></Link> : <Badge tone="neutral">No payment hash</Badge>}
           </div>
 
           <SignerContext account={wallet.account} role="Reclaim caller" network="Creditcoin" contract={addresses.tape} />
 
-          {stage !== 'idle' && <ol className="reclaim-progress" aria-label="Reclaim transaction progress" aria-live="polite">{STAGES.map((item, index) => <li data-state={index < currentStage ? 'done' : index === currentStage ? 'active' : 'pending'} key={item.key}><i>{index < currentStage ? '✓' : index + 1}</i><span>{item.label}</span></li>)}</ol>}
-          {stage !== 'idle' && <ProgressStatus label={stage === 'wallet' ? 'Connecting wallet…' : stage === 'network' ? 'Switching to Creditcoin…' : stage === 'signature' ? 'Waiting for reclaim signature…' : 'Confirming reclaim…'} />}
+          {stage !== 'idle' && <ol className="reclaim-progress" aria-label="Reclaim transaction progress" aria-live="polite">{STAGES.map((item, index) => <li data-state={index < currentStage ? 'done' : index === currentStage ? 'active' : 'pending'} key={item.key}><i>{index < currentStage ? <MaterialIcon name="check" /> : index + 1}</i><span>{item.label}</span></li>)}</ol>}
+          {stage !== 'idle' && <ProgressStatus label={stage === 'wallet' ? 'Connecting wallet...' : stage === 'network' ? 'Switching to Creditcoin...' : stage === 'signature' ? 'Waiting for reclaim signature...' : 'Confirming reclaim...'} />}
 
           {protection && <Notice tone="disputed" title={protection.title} consequence={protection.consequence} recovery={protection.recovery} technicalDetails={<code>{errorText(problem)}</code>} />}
           {problem != null && !protection && <ErrorNotice error={problem} title="Reclaim did not complete" onRetry={() => void reclaim()} />}
 
-          <div className="reclaim-dialog-actions"><LoadingButton className="danger" onClick={() => void reclaim()} loading={busy} loadingLabel={stage === 'wallet' ? 'Connecting wallet…' : stage === 'network' ? 'Switching network…' : stage === 'signature' ? 'Waiting for signature…' : 'Confirming reclaim…'}>Confirm reclaim</LoadingButton><Button variant="quiet" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button></div>
+          <div className="reclaim-dialog-actions"><LoadingButton className="danger" onClick={() => void reclaim()} loading={busy} loadingLabel={stage === 'wallet' ? 'Connecting wallet...' : stage === 'network' ? 'Switching network...' : stage === 'signature' ? 'Waiting for signature...' : 'Confirming reclaim...'}>Confirm reclaim</LoadingButton><Button variant="quiet" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button></div>
         </section>
       </div>}
     </>

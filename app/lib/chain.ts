@@ -3,7 +3,7 @@ import { sepolia } from 'viem/chains';
 
 /**
  * Next.js only inlines `NEXT_PUBLIC_*` vars into the client bundle when they
- * appear as literal `process.env.NEXT_PUBLIC_X` member expressions — a
+ * appear as literal `process.env.NEXT_PUBLIC_X` member expressions, a
  * dynamic `process.env[key]` lookup is invisible to its build-time replace
  * step, so every value below silently reads back empty in the browser. Keep
  * each one spelled out literally, even though it's repetitive.

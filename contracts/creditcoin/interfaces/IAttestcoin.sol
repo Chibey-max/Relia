@@ -67,6 +67,26 @@ struct Type2Fields {
     bytes32 s;
 }
 
+struct AuthorizationListEntry {
+    uint256 chainId;
+    address account;
+    uint64 nonce;
+    uint8 yParity;
+    uint256 r;
+    uint256 s;
+}
+
+struct Type4Fields {
+    uint64 chainId;
+    uint128 maxPriorityFeePerGas;
+    uint128 maxFeePerGas;
+    AccessListEntry[] accessList;
+    AuthorizationListEntry[] authorizationList;
+    uint8 yParity;
+    bytes32 r;
+    bytes32 s;
+}
+
 /// @dev `address_` keeps the ABI's own field name; `address` is reserved.
 struct EvmLog {
     address address_;
@@ -90,6 +110,12 @@ struct Type2Transaction {
     Receipt receipt;
 }
 
+struct Type4Transaction {
+    CommonTx commonTx;
+    Type4Fields type4;
+    Receipt receipt;
+}
+
 /// @notice The canonical EVM-v1 decoder deployed on Creditcoin.
 interface IEvmV1Decoder {
     function getTransactionType(bytes calldata encodedTx) external view returns (uint8 txType);
@@ -98,6 +124,11 @@ interface IEvmV1Decoder {
         external
         view
         returns (Type2Transaction memory);
+
+    function decodeTransactionType4(bytes calldata chunk)
+        external
+        view
+        returns (Type4Transaction memory);
 
     function getLogsByEventSignature(Receipt memory receipt, bytes32 eventSignature)
         external

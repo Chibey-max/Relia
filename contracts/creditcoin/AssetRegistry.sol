@@ -85,6 +85,7 @@ contract AssetRegistry {
         address shopSepolia,
         address buyer
     ) external returns (bytes32 assetId) {
+        if (msg.sender != deployer) revert OnlyDeployer();
         if (installment == 0) revert ZeroInstallment();
         if (shopCtc == address(0)) revert ZeroAddressField("shopCtc");
         if (shopSepolia == address(0)) revert ZeroAddressField("shopSepolia");

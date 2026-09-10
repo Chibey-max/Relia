@@ -5,32 +5,32 @@
  * write flow. Keeping them in one module prevents an interactive example from
  * drifting into something that looks like live contract state.
  */
-export const DEMO_DISCLOSURE = 'Interactive example · sample data · no wallet';
+export const DEMO_DISCLOSURE = 'Interactive example | sample data | no wallet';
 
 export const DEMO_PROCESS = [
   {
     number: '01',
     title: 'A payment is sent',
     body: 'The buyer reviews the exact installment, then approves the payment in their wallet.',
-    meta: 'SEPOLIA · PAYMENT',
+    meta: 'SEPOLIA | PAYMENT',
   },
   {
     number: '02',
     title: 'The shop acknowledges it',
     body: 'The shop confirms the same installment, giving both sides a matching record.',
-    meta: 'SEPOLIA · ACK',
+    meta: 'SEPOLIA | ACK',
   },
   {
     number: '03',
     title: 'Both facts are proven',
     body: 'Relia checks that the payment and confirmation belong together. The payment stays put.',
-    meta: 'PROOF · NO CUSTODY',
+    meta: 'PROOF | NO CUSTODY',
   },
   {
     number: '04',
     title: 'The title slice turns live',
     body: 'The approved installment fills the next title slice and produces a public receipt.',
-    meta: 'CREDITCOIN · TITLE',
+    meta: 'CREDITCOIN | TITLE',
   },
 ] as const;
 

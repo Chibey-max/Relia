@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { CopyButton } from '@/components/CopyButton';
+import { MaterialIcon } from '@/components/MaterialIcon';
 import { RECORD_STATES, type RecordState } from '@/lib/recordStates';
 
 function classes(...values: Array<string | false | undefined>) {
@@ -9,17 +10,17 @@ function classes(...values: Array<string | false | undefined>) {
 export type StatusTone = 'live' | 'due' | 'disputed' | 'shortfall' | 'reclaimed' | 'neutral' | 'editorial';
 
 const SYMBOLS: Record<StatusTone, string> = {
-  live: '✓',
-  due: '○',
-  disputed: '!',
-  shortfall: '×',
-  reclaimed: '↩',
-  neutral: '•',
-  editorial: '✦',
+  live: 'check',
+  due: 'radio_button_unchecked',
+  disputed: 'warning',
+  shortfall: 'close',
+  reclaimed: 'keyboard_return',
+  neutral: 'circle',
+  editorial: 'auto_awesome',
 };
 
 export function Badge({ tone = 'neutral', symbol, children, className }: { tone?: StatusTone; symbol?: string | false; children: ReactNode; className?: string }) {
-  return <span className={classes('status-badge', 'ui-badge', `ui-badge-${tone}`, className)}>{symbol !== false && <span aria-hidden="true">{symbol ?? SYMBOLS[tone]}</span>}{children}</span>;
+  return <span className={classes('status-badge', 'ui-badge', `ui-badge-${tone}`, className)}>{symbol !== false && <MaterialIcon name={symbol ?? SYMBOLS[tone]} />}{children}</span>;
 }
 
 export function RecordStateBadge({ state, className }: { state: RecordState; className?: string }) {
@@ -44,13 +45,18 @@ export function StatusIndicator({ tone = 'neutral', label, className }: { tone?:
   return <span className={classes('ui-status-indicator', `ui-status-indicator-${tone}`, className)}><i aria-hidden="true" /><span>{label}</span></span>;
 }
 
-export function DataEmptyState({ symbol = '○', title, body, action }: { symbol?: string; title: ReactNode; body: ReactNode; action?: ReactNode }) {
+export function DataEmptyState({ symbol = 'radio_button_unchecked', title, body, action }: { symbol?: string; title: ReactNode; body: ReactNode; action?: ReactNode }) {
   return (
     <div className="empty-state data-empty-state">
-      <span className="data-empty-mark" aria-hidden="true">{symbol}</span>
+      <span className="data-empty-mark" aria-hidden="true"><MaterialIcon name={symbol} /></span>
       <div><strong>{title}</strong><p>{body}</p>{action && <div className="data-empty-action">{action}</div>}</div>
     </div>
   );
+}
+
+function compactIdentifier(value: string): string {
+  if (value.length <= 24) return value;
+  return `${value.slice(0, 10)}...${value.slice(-8)}`;
 }
 
 export function Notice({
@@ -89,10 +95,10 @@ export function IdentifierField({ label, value, explorerHref, explorerLabel = 'I
   return (
     <div className="identifier-field">
       <span className="type-label">{label}</span>
-      <code className="identifier-value">{value}</code>
+      <code className="identifier-value" title={value}>{compactIdentifier(value)}</code>
       <div className="identifier-actions">
         <CopyButton value={value} label={kind === 'identifier' ? 'Copy identifier' : `Copy ${kind}`} />
-        {explorerHref && <a href={explorerHref} target="_blank" rel="noreferrer" aria-label={`${explorerLabel}: ${value}`}>{explorerLabel} ↗</a>}
+        {explorerHref && <a href={explorerHref} target="_blank" rel="noreferrer" aria-label={`${explorerLabel}: ${value}`}>{explorerLabel}<MaterialIcon name="open_in_new" /></a>}
       </div>
     </div>
   );

@@ -2,7 +2,13 @@
 pragma solidity 0.8.28;
 
 import {LibRLP} from "./LibRLP.sol";
-import {CommonTx, Type2Fields, AccessListEntry} from "../creditcoin/interfaces/IAttestcoin.sol";
+import {
+    CommonTx,
+    Type2Fields,
+    Type4Fields,
+    AuthorizationListEntry,
+    AccessListEntry
+} from "../creditcoin/interfaces/IAttestcoin.sol";
 
 /// @title LibTxHash — recover a source-chain transaction hash from its decoded fields
 /// @notice The Block Prover attests to a transaction's *contents*, not to its
@@ -63,5 +69,59 @@ library LibTxHash {
         );
 
         return keccak256(abi.encodePacked(uint8(0x02), LibRLP.encodeList(payload)));
+    }
+
+    function type4Hash(CommonTx memory common, Type4Fields memory t4)
+        internal
+        pure
+        returns (bytes32)
+    {
+        if (t4.accessList.length != 0) revert AccessListUnsupported();
+        if (common.toIsNull) revert ContractCreationUnsupported();
+
+        bytes memory payload = abi.encodePacked(
+            LibRLP.encodeUint(t4.chainId),
+            LibRLP.encodeUint(common.nonce),
+            LibRLP.encodeUint(t4.maxPriorityFeePerGas),
+            LibRLP.encodeUint(t4.maxFeePerGas)
+        );
+        payload = abi.encodePacked(
+            payload,
+            LibRLP.encodeUint(common.gasLimit),
+            LibRLP.encodeAddress(common.to),
+            LibRLP.encodeUint(common.value),
+            LibRLP.encodeBytes(common.data)
+        );
+        payload = abi.encodePacked(
+            payload,
+            hex"c0",
+            _encodeAuthorizationList(t4.authorizationList),
+            LibRLP.encodeUint(t4.yParity),
+            LibRLP.encodeBytes32AsScalar(t4.r),
+            LibRLP.encodeBytes32AsScalar(t4.s)
+        );
+
+        return keccak256(abi.encodePacked(uint8(0x04), LibRLP.encodeList(payload)));
+    }
+
+    function _encodeAuthorizationList(AuthorizationListEntry[] memory auths)
+        private
+        pure
+        returns (bytes memory)
+    {
+        bytes memory payload;
+        for (uint256 i = 0; i < auths.length; i++) {
+            AuthorizationListEntry memory auth = auths[i];
+            bytes memory entry = abi.encodePacked(
+                LibRLP.encodeUint(auth.chainId),
+                LibRLP.encodeAddress(auth.account),
+                LibRLP.encodeUint(auth.nonce),
+                LibRLP.encodeUint(auth.yParity),
+                LibRLP.encodeUint(auth.r),
+                LibRLP.encodeUint(auth.s)
+            );
+            payload = abi.encodePacked(payload, LibRLP.encodeList(entry));
+        }
+        return LibRLP.encodeList(payload);
     }
 }

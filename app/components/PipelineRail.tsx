@@ -1,4 +1,5 @@
 'use client';
+import { MaterialIcon } from '@/components/MaterialIcon';
 
 /**
  * The pipeline rail.
@@ -10,10 +11,12 @@
 
 export type StageName =
   | 'sepolia_mined'
+  | 'proof_queued'
   | 'block_finalized'
   | 'attested'
   | 'ack_located'
   | 'proof_generated'
+  | 'proof_submitted'
   | 'verified'
   | 'title_ticked';
 
@@ -36,9 +39,11 @@ interface StageSpec {
 export const STAGES: StageSpec[] = [
   { name: 'sepolia_mined', label: 'Payment mined on Sepolia', attestcoin: false },
   { name: 'ack_located', label: 'Shop acknowledgement located', attestcoin: false },
+  { name: 'proof_queued', label: 'Payment and acknowledgement queued', attestcoin: false },
   { name: 'block_finalized', label: 'Block finalized', attestcoin: false },
   { name: 'attested', label: 'Height attested', attestcoin: true },
   { name: 'proof_generated', label: 'Batch proof generated (2 queries, 1 continuity proof)', attestcoin: true },
+  { name: 'proof_submitted', label: 'Proof transaction submitted', attestcoin: true },
   { name: 'verified', label: 'Verified by Block Prover on Creditcoin', attestcoin: true },
   { name: 'title_ticked', label: 'Title slice ticked', attestcoin: false },
 ];
@@ -48,7 +53,7 @@ function detailLine(e: StageEvent): string {
   return Object.entries(e.detail)
     .filter(([, v]) => v !== null && v !== undefined && v !== false)
     .map(([k, v]) => `${k}: ${String(v)}`)
-    .join('  ·  ');
+    .join('  |  ');
 }
 
 export function PipelineRail({ events }: { events: StageEvent[] }) {
@@ -66,7 +71,7 @@ export function PipelineRail({ events }: { events: StageEvent[] }) {
           const state = hit ? (hit.error ? 'failed' : 'done') : (!failed && index === done ? 'active' : 'pending');
           return (
             <li key={s.name} className={`pipeline-item ${state}`} aria-current={state === 'active' ? 'step' : undefined}>
-              <span className="pipeline-marker">{state === 'done' ? '✓' : state === 'failed' ? '✕' : String(index + 1).padStart(2, '0')}</span>
+              <span className="pipeline-marker">{state === 'done' ? <MaterialIcon name="check" /> : state === 'failed' ? <MaterialIcon name="close" /> : String(index + 1).padStart(2, '0')}</span>
               <div>
                 <div className="pipeline-label">
                   {s.label}
@@ -96,7 +101,7 @@ export function PipelineRail({ events }: { events: StageEvent[] }) {
 export function RefusalNotice({ rule, sentence }: { rule: string; sentence: string }) {
   return (
     <div className="notice error">
-      <span className="status-badge status-shortfall">✕ {rule}</span>
+      <span className="status-badge status-shortfall"><MaterialIcon name="close" /> {rule}</span>
       <p className="notice-message">{sentence}</p>
       <p className="aside-note notice-recovery">
         This is a rule the contract enforces on-chain, not a client-side check.

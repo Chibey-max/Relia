@@ -285,11 +285,12 @@ Still intentionally open below are full wallet-state controls, print/share behav
 
 ## Recommended delivery sequence
 
-- [ ] **Milestone 1:** Tokens, typography, shared surfaces, and navigation
-- [ ] **Milestone 2:** Hero, landing-page composition, and product narrative
-- [ ] **Milestone 3:** Mechanism, receipt, and state system
-- [ ] **Milestone 4:** Transaction flows and data interfaces
+- [x] **Milestone 1:** Tokens, typography, shared surfaces, and navigation
+- [x] **Milestone 2:** Hero, landing-page composition, and product narrative
+- [x] **Milestone 3:** Mechanism, receipt, and state system
+- [x] **Milestone 4:** Transaction flows and data interfaces
 - [ ] **Milestone 5:** Motion, responsive behavior, accessibility, and final QA
+  - Automated QA is complete; Safari/iOS Safari, hands-on screen-reader navigation, and real extension-wallet signing still require external devices/accounts.
 
 ---
 
@@ -466,16 +467,16 @@ Still intentionally open below are full wallet-state controls, print/share behav
 ### Phase L12 — Loading-system verification
 
 - [x] Test route transitions with an empty browser cache.
-- [ ] Test fast cached navigation for loading-state flicker.
+- [x] Test fast cached navigation for loading-state flicker.
 - [x] Test delayed RPC responses.
-- [ ] Test failed RPC responses.
-- [ ] Test wallet rejection at every signing phase.
-- [ ] Test network switching failures.
-- [ ] Test changing the Title asset ID during an active read.
-- [ ] Test repeated Verify searches while events are loading.
-- [ ] Test desktop and compact skeleton layouts.
-- [ ] Test keyboard focus during content replacement.
-- [ ] Test `prefers-reduced-motion: reduce`.
+- [x] Test failed RPC responses.
+- [x] Test wallet rejection at every signing phase.
+- [x] Test network switching failures.
+- [x] Test changing the Title asset ID during an active read.
+- [x] Test repeated Verify searches while events are loading.
+- [x] Test desktop and compact skeleton layouts.
+- [x] Test keyboard focus during content replacement.
+- [x] Test `prefers-reduced-motion: reduce`.
 - [x] Run TypeScript validation and the optimized production build.
 
 ### Loading delivery sequence
@@ -484,7 +485,8 @@ Still intentionally open below are full wallet-state controls, print/share behav
 - [x] **Loading milestone 2:** Verify, public receipt, and Tape skeletons
 - [x] **Loading milestone 3:** Title loading and parallelized reads
 - [x] **Loading milestone 4:** Send and wallet phase state machines
-- [ ] **Loading milestone 5:** Progressive timing, accessibility, and failure-mode QA
+- [x] **Loading milestone 5:** Progressive timing, accessibility, and failure-mode QA
+  - Verified 2026-09-08 by the C7/C8/C9 browser audits against the rebuilt production app; remaining external browser/device coverage is tracked separately below.
 
 ---
 
@@ -503,15 +505,17 @@ This backlog covers contract capabilities that do not yet have a complete user-f
   - [x] `ShortfallTape`
   - [x] `TitlePass`
   - [x] `ProofConsumer`
-- [ ] Complete the one-time contract wiring with the existing deployment scripts.
+- [x] Complete the one-time contract wiring with the existing deployment scripts.
+  - `registry.wire(pass, tape)`, `tape.setConsumer`, `pass.setConsumer`, `pass.setRegistrar` all confirmed on-chain 2026-09-08 against the redeployed contracts.
 - [x] Configure all seven `NEXT_PUBLIC_*` contract addresses for the frontend.
 - [x] Configure `NEXT_PUBLIC_CTC_DEPLOY_BLOCK` so event reads do not scan from genesis.
 - [x] Validate bytecode and chain IDs before enabling transaction controls.
 - [x] Add a visible configuration-error state when an address is missing or malformed.
 - [x] Disable affected actions instead of attempting transactions against an empty address.
-- [ ] Confirm the proof worker is configured with the matching deployments and source-chain key.
+- [x] Confirm the proof worker is configured with the matching deployments and source-chain key.
+  - Worker started 2026-09-08 against the redeployed addresses; `SOURCE_CHAIN_KEY=1` resolved live via `npm run chainkey` rather than trusted as a guess.
 
-Verified 2026-09-07: both RPC chain IDs matched, all seven configured addresses returned deployed bytecode, and the configured asset resolved through `AssetRegistry.getAsset(...)`.
+Verified 2026-09-07: both RPC chain IDs matched, all seven configured addresses returned deployed bytecode, and the configured asset resolved through `AssetRegistry.getAsset(...)`. Re-verified 2026-09-08 after a full redeploy (see [README.md](../README.md#deployed-addresses) and Phase C10 below).
 
 ### Phase C1 — Asset detail route
 
@@ -668,50 +672,61 @@ Verified 2026-09-07: the C9 safety audit checked all nine routes at 320px, 768px
 
 ### Phase C10 — End-to-end live workflow completion
 
-- [ ] Confirm the one-time contract wiring is correct on both testnets before running user transactions.
-- [ ] Configure and run the proof worker against the same Sepolia and Creditcoin deployments.
-- [ ] Confirm the worker can observe a finalized payment and matching acknowledgement.
-- [ ] Generate the cross-chain proof and submit it through the infrastructure-controlled consumer flow.
-- [ ] Verify the corresponding Creditcoin receipt event is emitted and the correct title slice becomes live.
-- [ ] Add a read-only frontend status source for:
-  - [ ] Payment confirmed
-  - [ ] Acknowledgement confirmed
-  - [ ] Proof queued
-  - [ ] Attestation ready
-  - [ ] Proof submitted
-  - [ ] Proof refused or failed
-  - [ ] Receipt emitted
-  - [ ] Title updated
-- [ ] Drive live progress animation only from confirmed status data; do not infer completion from elapsed time.
-- [ ] Reconcile status after refresh, temporary RPC failure, worker restart, and browser back/forward navigation.
-- [ ] Prevent duplicate proof submission while a payment is queued or already consumed.
-- [ ] Complete the user-facing contract screens tracked in Phases C1–C8:
-  - [ ] Canonical asset detail and twelve-slice history
-  - [ ] Asset listing and resumable shop registration
-  - [ ] Reclaim workflow
-  - [ ] Cleared-title transfer and approval management
-  - [ ] Proof-worker visibility and existing-screen consolidation
+- [x] Confirm the one-time contract wiring is correct on both testnets before running user transactions.
+  - Verified 2026-09-08 via direct `cast call` against the redeployed contracts (not assumed from scripts): `AssetRegistry.titlePass()/tape()`, `ShortfallTape.consumer()`, `TitlePass.consumer()/registrar()`, and `ProofConsumer.paySinkSepolia()/shopAckSepolia()` all match the addresses in [README.md](../README.md#deployed-addresses).
+- [x] Configure and run the proof worker against the same Sepolia and Creditcoin deployments.
+  - Worker built and started 2026-09-08 against the redeployed addresses; `npm run chainkey` resolved `SOURCE_CHAIN_KEY=1` live rather than trusting the prior guessed value.
+- [x] Confirm the worker can observe a finalized payment and matching acknowledgement.
+  - A real `pay()` and `ack()` were submitted on Sepolia for the demo asset; the worker logged `sepolia_mined`, `ack_located`, `block_finalized`, and `attested` for both.
+- [x] Generate the cross-chain proof and submit it through the infrastructure-controlled consumer flow.
+  - Verified 2026-09-09: the worker observed the real Sepolia payment `0x0e07b1fd3695b95299d877f4772d6a12aec05ddb9662c11159676dc3f7e355d8`, acknowledgement `0xf4b28cdfe57ff04ebbc8d4db0f2e4f35d6add642040f854a3cbd537ce9786190`, reached `attested` and `proof_generated`, and the matching `consume()` calldata landed on Creditcoin as `0x0fd7b4319f4cd8693d92578a29451d032082b80bce4b09f63b41d1bc27405ab2` in block `5457260`.
+- [x] Verify the corresponding Creditcoin receipt event is emitted and the correct title slice becomes live.
+  - Verified 2026-09-09 by direct Creditcoin reads: `InstallmentReceipt` exists, `consumed(payTx) == true`, `consumed(ackTx) == true`, `isSliceLive(assetId, 1) == true`, and `slicesFilled(assetId) == 1` for asset `0x5aea9e7b1c2f754cacfb4cd1113db6727b001400fcfa4eaeb40e2c3aff425668`.
+- [x] Add a read-only frontend status source for:
+  - [x] Payment confirmed — `sepolia_mined`
+  - [x] Acknowledgement confirmed — `ack_located`
+  - [x] Proof queued — `proof_queued`
+  - [x] Attestation ready — `attested`
+  - [x] Proof submitted — `proof_generated`
+  - [x] Proof refused or failed — `failure()` / decoded refusal names
+  - [x] Receipt emitted — `verified`
+  - [x] Title updated — `title_ticked`
+  - All emitted by `worker/src/status.ts` + `worker/src/stages.ts` and consumed by `app/components/ProofStatusPanel.tsx`, wired into `/send`.
+- [x] Drive live progress animation only from confirmed status data; do not infer completion from elapsed time.
+  - `/send` now passes only confirmed payment/ack hashes into the proof observer, and the observer marks proof steps complete from status events rather than submitted hashes.
+- [x] Reconcile status after refresh, temporary RPC failure, worker restart, and browser back/forward navigation.
+  - The worker now writes a bounded JSON checkpoint with cursor, pairs, submitted proof hash, and public stage events; the status endpoint hydrates from it on restart.
+- [x] Prevent duplicate proof submission while a payment is queued or already consumed.
+  - The worker checks `consumer.consumed()` before proving, persists queued pairs, records `proofTxHash` as soon as `consume()` returns a transaction hash, and waits on that existing transaction after restart instead of submitting a duplicate.
+- [x] Complete the user-facing contract screens tracked in Phases C1–C8:
+  - [x] Canonical asset detail and twelve-slice history
+  - [x] Asset listing and resumable shop registration
+  - [x] Reclaim workflow
+  - [x] Cleared-title transfer and approval management
+  - [x] Proof-worker visibility and existing-screen consolidation
 - [ ] Run a funded-wallet testnet journey with real extension approval:
   - [ ] Connect wallet and verify account/network presentation
-  - [ ] Mint and approve test USDC
-  - [ ] Submit and confirm an installment payment
-  - [ ] Submit and confirm the registered shop acknowledgement
-  - [ ] Observe proof generation without a browser signing control
-  - [ ] Verify receipt emission and title update through the public UI
-- [ ] Test wallet rejection at every signature request without losing entered values.
-- [ ] Test wrong-network recovery, RPC timeout, reverted transaction, worker refusal, and worker outage.
-- [ ] Preserve every submitted transaction hash and reconcile confirmation without duplicate writes.
-- [ ] Run contract tests, proof-worker validation, frontend browser audits, and the optimized production build as one release gate.
+  - [x] Mint and approve test USDC — done directly via `cast send` with the buyer's key (not through the browser wallet UI)
+  - [x] Submit and confirm an installment payment — real, confirmed on Sepolia
+  - [x] Submit and confirm the registered shop acknowledgement — real, confirmed on Sepolia
+  - [x] Observe proof generation without a browser signing control — confirmed via the worker's own status feed
+  - [x] Verify receipt emission and title update through the public UI — verified 2026-09-09 in headless Chrome against the production server: `/verify/0x0e07b1fd3695b95299d877f4772d6a12aec05ddb9662c11159676dc3f7e355d8`, `/assets/0x5aea9e7b1c2f754cacfb4cd1113db6727b001400fcfa4eaeb40e2c3aff425668`, and `/title/0x5aea9e7b1c2f754cacfb4cd1113db6727b001400fcfa4eaeb40e2c3aff425668` render the live receipt/title data with no horizontal overflow. Still not a browser-extension signing journey because payment and acknowledgement were driven through `cast`/scripts.
+- [x] Test wallet rejection at every signature request without losing entered values.
+- [x] Test wrong-network recovery, RPC timeout, reverted transaction, worker refusal, and worker outage.
+- [x] Preserve every submitted transaction hash and reconcile confirmation without duplicate writes.
+- [x] Run contract tests, proof-worker validation, frontend browser audits, and the optimized production build as one release gate.
+  - 2026-09-08: `forge test` 56/56 passing (46 original + 10 new, covering the `ReliaShopAck` front-run fix and `TitlePass.safeTransferFrom` fix); `tsc --noEmit` clean on `app` and `worker`; `forge build` clean.
 
 ### Contract UI delivery sequence
 
-- [ ] **Contract UI milestone 1:** Deployment configuration and address validation
-- [ ] **Contract UI milestone 2:** Canonical asset detail and read-only history
-- [ ] **Contract UI milestone 3:** Asset listing and resumable shop registration
-- [ ] **Contract UI milestone 4:** Reclaim actions and role-aware settlement refresh
-- [ ] **Contract UI milestone 5:** Cleared-title transfer and approval management
-- [ ] **Contract UI milestone 6:** Proof-worker visibility and existing-screen consolidation
+- [x] **Contract UI milestone 1:** Deployment configuration and address validation
+- [x] **Contract UI milestone 2:** Canonical asset detail and read-only history
+- [x] **Contract UI milestone 3:** Asset listing and resumable shop registration
+- [x] **Contract UI milestone 4:** Reclaim actions and role-aware settlement refresh
+- [x] **Contract UI milestone 5:** Cleared-title transfer and approval management
+- [x] **Contract UI milestone 6:** Proof-worker visibility and existing-screen consolidation
 - [ ] **Contract UI milestone 7:** Accessibility, failure-mode, responsive, and end-to-end QA
+  - Automated accessibility, failure-mode, responsive, worker-outage, and duplicate-submission coverage is done. Still open: live funded-wallet browser-extension approval; the final on-chain `consume()` broadcast is complete.
 
 ---
 
@@ -721,15 +736,15 @@ This work should make the landing page feel responsive and exploratory while usi
 
 ### Interaction principles
 
-- [ ] Make every reaction correspond to a user action, narrative transition, or meaningful product state.
-- [ ] Preserve the colorful, playful, hand-drawn visual language in every new interaction.
-- [ ] Keep the physics-based brand section as the only complex continuous animation.
-- [ ] Prefer short, one-time sequences over looping movement.
-- [ ] Keep important content visible before client-side JavaScript initializes.
-- [ ] Do not use motion to conceal loading, contract latency, or incomplete functionality.
-- [ ] Avoid layout shifts, hydration-dependent attributes, random render-time values, and server/client markup differences.
-- [ ] Support pointer, keyboard, and touch input; do not make essential information hover-only.
-- [ ] Provide a quiet equivalent for every interaction under `prefers-reduced-motion: reduce`.
+- [x] Make every reaction correspond to a user action, narrative transition, or meaningful product state.
+- [x] Preserve the colorful, playful, hand-drawn visual language in every new interaction.
+- [x] Keep the physics-based brand section as the only complex continuous animation.
+- [x] Prefer short, one-time sequences over looping movement.
+- [x] Keep important content visible before client-side JavaScript initializes.
+- [x] Do not use motion to conceal loading, contract latency, or incomplete functionality.
+- [x] Avoid layout shifts, hydration-dependent attributes, random render-time values, and server/client markup differences.
+- [x] Support pointer, keyboard, and touch input; do not make essential information hover-only.
+- [x] Provide a quiet equivalent for every interaction under `prefers-reduced-motion: reduce`.
 
 ### Phase I1 — Interaction architecture
 
@@ -887,5 +902,6 @@ Local production validation snapshot (2026-09-07):
 - [x] **Interactivity milestone 1:** Architecture, state model, and deterministic reveal utilities
 - [x] **Interactivity milestone 2:** Hero demonstration and scroll-led narrative
 - [x] **Interactivity milestone 3:** Process playground and receipt exploration
-- [ ] **Interactivity milestone 4:** Tactile controls, hand-drawn responses, and compact-screen adaptation
+- [x] **Interactivity milestone 4:** Tactile controls, hand-drawn responses, and compact-screen adaptation
 - [ ] **Interactivity milestone 5:** Accessibility, performance profiling, failure modes, and cross-browser QA
+  - Automated Chromium/Firefox-style interaction, responsive, reduced-motion, no-JavaScript, and failure-mode checks are done. Still open: Safari/iOS Safari and hands-on screen-reader navigation.

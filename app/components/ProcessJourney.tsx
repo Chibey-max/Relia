@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ExperienceMode } from '@/components/ExperienceMode';
+import { MaterialIcon } from '@/components/MaterialIcon';
 import { DEMO_DISCLOSURE } from '@/lib/demoData';
 
 export interface ProcessJourneyStep {
@@ -58,10 +59,10 @@ function stateFor(mode: ExampleMode, index: number): StepState {
 }
 
 function stateSymbol(state: StepState): string {
-  if (state === 'complete') return '✓';
-  if (state === 'failed') return '×';
-  if (state === 'active') return '•';
-  return '○';
+  if (state === 'complete') return 'check';
+  if (state === 'failed') return 'close';
+  if (state === 'active') return 'radio_button_checked';
+  return 'radio_button_unchecked';
 }
 
 function connectorFor(current: StepState, next?: StepState): ConnectorState {
@@ -136,7 +137,7 @@ export function ProcessJourney({ steps }: { steps: ProcessJourneyStep[] }) {
                 >
                   <span className="process-top">
                     <span className="process-number">{step.number}</span>
-                    <span className="process-check" aria-hidden="true">{stateSymbol(state)}</span>
+                    <span className="process-check" aria-hidden="true"><MaterialIcon name={stateSymbol(state)} /></span>
                     <span className="process-state-label">{state}</span>
                   </span>
                   <span className="process-card-title">{step.title}</span>
@@ -154,7 +155,7 @@ export function ProcessJourney({ steps }: { steps: ProcessJourneyStep[] }) {
             role="note"
             key={`detail-${selectedStep}`}
           >
-            <span className="mini-title">STEP {selected?.number} · {STATE_MEANING[selectedState]}</span>
+            <span className="mini-title">STEP {selected?.number} | {STATE_MEANING[selectedState]}</span>
             <strong>{selected?.title}</strong>
             <p>{STEP_INSIGHTS[selectedStep]}</p>
             <span className="process-detail-meta">{selected?.meta}</span>

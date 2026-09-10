@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+/// @dev Minimal ERC-721 receiver interface, used only to check that a
+///      contract recipient of a cleared title actually implements it.
+interface IERC721Receiver {
+    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data)
+        external
+        returns (bytes4);
+}
+
 /// @title TitlePass — soulbound ERC-721 whose slices are earned, not minted
 /// @notice `tokenId == uint256(assetId)`. The pass exists from listing, but it
 ///         is worth nothing until slices are ticked, and each tick requires a
@@ -44,6 +52,7 @@ contract TitlePass {
     error NotMinted(uint256 tokenId);
     error SliceOutOfRange(uint8 n);
     error SliceAlreadyTicked(bytes32 assetId, uint8 n);
+    error NonERC721Receiver(address to);
 
     /// @notice Refusal #9. The pass is soulbound until the twelfth slice is
     ///         proven; only then does it become an asset the holder can move.
@@ -155,10 +164,28 @@ contract TitlePass {
 
     function safeTransferFrom(address from, address to, uint256 tokenId) external {
         transferFrom(from, to, tokenId);
+        _requireReceiver(from, to, tokenId, "");
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata) external {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external {
         transferFrom(from, to, tokenId);
+        _requireReceiver(from, to, tokenId, data);
+    }
+
+    /// @dev ERC-721's actual safety check: a contract recipient must return
+    ///      the correct selector from `onERC721Received`, or the transfer is
+    ///      rejected. `transferFrom` above already moved the token, so on
+    ///      failure this reverts the whole transaction rather than leaving
+    ///      the title stuck at a contract that cannot move it again — cleared
+    ///      titles are the only ones that can ever be transferred, so a title
+    ///      stranded here would have no recovery path.
+    function _requireReceiver(address from, address to, uint256 tokenId, bytes memory data) internal {
+        if (to.code.length == 0) return;
+        try IERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, data) returns (bytes4 selector) {
+            if (selector != IERC721Receiver.onERC721Received.selector) revert NonERC721Receiver(to);
+        } catch {
+            revert NonERC721Receiver(to);
+        }
     }
 
     mapping(uint256 => address) internal _approved;

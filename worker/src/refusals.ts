@@ -14,8 +14,14 @@ function describe(name: string, a: Record<string, string>): string {
   switch (name) {
     case 'NotSuccessful':
       return `That Sepolia transaction reverted. A failed payment is still provable, which is exactly why this check exists.`;
+    case 'WrongTransactionType':
+      return `Unsupported Sepolia transaction type ${a.txType}. Use a wallet mode that emits a supported transaction type.`;
     case 'AlreadyConsumed':
       return `Consumed. ${a.txHash} has already filled a slice and cannot fill another.`;
+    case 'SliceAlreadyResolved':
+      return `Slice ${a.n} is already resolved with status ${a.status}; choose the next due slice.`;
+    case 'SliceAlreadyTicked':
+      return `Slice ${a.n} is already live on the title pass; choose the next due slice.`;
     case 'UnderPaid':
       return `Short by ${BigInt(a.required ?? 0) - BigInt(a.paid ?? 0)} units. The installment is ${a.required}.`;
     case 'AckDoesNotCitePayment':

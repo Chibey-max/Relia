@@ -3,14 +3,16 @@
 import Link from 'next/link';
 import { CopyButton } from '@/components/CopyButton';
 import { ExperienceMode } from '@/components/ExperienceMode';
+import { MaterialIcon } from '@/components/MaterialIcon';
 import { Card, Stamp } from '@/components/ui';
 import { DEMO_DISCLOSURE, DEMO_RECEIPT } from '@/lib/demoData';
 
 function SampleIdentifier({ label, value, copyLabel }: { label: string; value: string; copyLabel: string }) {
+  const display = value.length > 24 ? `${value.slice(0, 10)}...${value.slice(-8)}` : value;
   return (
     <div className="landing-receipt-identifier">
       <span>{label}</span>
-      <code>{value}</code>
+      <code title={value}>{display}</code>
       <CopyButton value={value} label={copyLabel} />
     </div>
   );
@@ -27,12 +29,12 @@ export function LandingReceipt() {
     >
       <header className="receipt-verdict">
         <div>
-          <span className="mini-title">ILLUSTRATIVE RECEIPT · SAMPLE DATA</span>
+          <span className="mini-title">ILLUSTRATIVE RECEIPT | SAMPLE DATA</span>
           <ExperienceMode>{DEMO_DISCLOSURE}</ExperienceMode>
           <strong>Slice {String(DEMO_RECEIPT.slice).padStart(2, '0')} of {DEMO_RECEIPT.totalSlices} is live</strong>
           <p>This specimen shows how a verified receipt is organized. It is not a live chain record.</p>
         </div>
-        <Stamp className="stamp">✓ LIVE</Stamp>
+        <Stamp className="stamp"><MaterialIcon name="check" /> LIVE</Stamp>
       </header>
 
       <div className="receipt-summary" role="group" aria-label="Sample receipt summary">
@@ -45,7 +47,7 @@ export function LandingReceipt() {
         <details open>
           <summary>
             <span><strong>Payment evidence</strong><small>Sepolia source fact</small></span>
-            <span className="receipt-inspector-plus" aria-hidden="true">+</span>
+            <span className="receipt-inspector-plus" aria-hidden="true"><MaterialIcon name="add" /></span>
           </summary>
           <div className="receipt-inspector-panel">
             <div className="receipt-inspector-panel-inner">
@@ -62,7 +64,7 @@ export function LandingReceipt() {
         <details>
           <summary>
             <span><strong>Shop acknowledgement</strong><small>Sepolia matching fact</small></span>
-            <span className="receipt-inspector-plus" aria-hidden="true">+</span>
+            <span className="receipt-inspector-plus" aria-hidden="true"><MaterialIcon name="add" /></span>
           </summary>
           <div className="receipt-inspector-panel">
             <div className="receipt-inspector-panel-inner">
@@ -79,7 +81,7 @@ export function LandingReceipt() {
         <details>
           <summary>
             <span><strong>Title evidence</strong><small>Creditcoin public result</small></span>
-            <span className="receipt-inspector-plus" aria-hidden="true">+</span>
+            <span className="receipt-inspector-plus" aria-hidden="true"><MaterialIcon name="add" /></span>
           </summary>
           <div className="receipt-inspector-panel">
             <div className="receipt-inspector-panel-inner">
@@ -97,7 +99,7 @@ export function LandingReceipt() {
 
       <footer className="receipt-final landing-receipt-footer">
         <span>Sample only. Real receipts expose their source transactions for independent inspection.</span>
-        <Link href="/verify">Verify a real receipt <span aria-hidden="true">→</span></Link>
+        <Link href="/verify">Verify a real receipt <MaterialIcon name="arrow_forward" /></Link>
       </footer>
     </Card>
   );

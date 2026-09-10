@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { DrawnArrow, Stamp } from '@/components/ui';
 import { ExperienceMode } from '@/components/ExperienceMode';
+import { MaterialIcon } from '@/components/MaterialIcon';
 import { DEMO_DISCLOSURE } from '@/lib/demoData';
 import { motionIsReduced } from '@/lib/interactionMotion';
 
@@ -20,9 +21,9 @@ type HeroStage = {
 const STAGES: readonly HeroStage[] = [
   {
     label: 'Installment',
-    icon: '₦',
+    icon: 'payments',
     title: '40.00 USDC sent',
-    summary: 'Payment 04 · Generator',
+    summary: 'Payment 04 | Generator',
     result: 'Recorded',
     explanation: 'The buyer approves one installment. The payment settles on Sepolia and stays there.',
     explanationTitle: 'The payment stays on its source chain',
@@ -30,7 +31,7 @@ const STAGES: readonly HeroStage[] = [
   },
   {
     label: 'Shop check',
-    icon: '✓',
+    icon: 'fact_check',
     title: 'Payment confirmed',
     summary: 'The shop confirms the same installment.',
     result: 'Matched',
@@ -180,7 +181,7 @@ export function HeroProof() {
           aria-busy={playing || undefined}
           data-playing={playing || undefined}
         >
-          <span aria-hidden="true">↻</span>{playing ? 'Playing…' : 'Replay story'}
+          <MaterialIcon name="replay" />{playing ? 'Playing...' : 'Replay story'}
         </button>
       </div>
       <DrawnArrow className="drawn-arrow" />
@@ -201,10 +202,10 @@ export function HeroProof() {
                 onKeyDown={(event) => handleStageKeyDown(event, index)}
               >
                 {index < 2 && (
-                  <span className="proof-paper-head"><span className="proof-icon">{stage.icon}</span><span className="mono">{stage.label}</span></span>
+                  <span className="proof-paper-head"><span className="proof-icon">{stage.icon && <MaterialIcon name={stage.icon} />}</span><span className="mono">{stage.label}</span></span>
                 )}
                 {index === 2 && <><Stamp tone="attention" className="stamp">CHECKED</Stamp><span className="mono proof-overline">{stage.label}</span></>}
-                {index === 3 && <><Stamp className="stamp">✓ LIVE</Stamp><span className="mono proof-overline">{stage.label}</span></>}
+                {index === 3 && <><Stamp className="stamp"><MaterialIcon name="check" /> LIVE</Stamp><span className="mono proof-overline">{stage.label}</span></>}
                 <strong>{stage.title}</strong>
                 {index === 3 && (
                   <span className="slice-progress" role="img" aria-label="Four of twelve title slices complete">
@@ -214,7 +215,7 @@ export function HeroProof() {
                 <span className="proof-stage-summary">{stage.summary}</span>
                 {index < 3 && <span className="proof-stage-result">{stage.result}</span>}
               </button>
-              {index < STAGES.length - 1 && <span className="proof-stage-connector" aria-hidden="true">→</span>}
+              {index < STAGES.length - 1 && <span className="proof-stage-connector" aria-hidden="true"><MaterialIcon name="arrow_forward" /></span>}
             </li>
           );
         })}
