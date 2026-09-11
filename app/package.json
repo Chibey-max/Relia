@@ -18,6 +18,7 @@
     "i13:visual-audit": "node scripts/mobile-visual-audit.mjs",
     "firefox:audit": "node scripts/firefox-audit.mjs",
     "perf:audit": "node scripts/performance-audit.mjs",
+    "submission:a11y": "node scripts/submission-a11y-audit.mjs",
     "start": "next start",
     "typecheck": "tsc --noEmit"
   },
@@ -27,11 +28,9 @@
     "react-dom": "^19.0.0",
     "viem": "^2.21.0",
     "wagmi": "^2.14.0",
-    "@tanstack/react-query": "^5.62.0",
-    "matter-js": "^0.20.0"
+    "@tanstack/react-query": "^5.62.0"
   },
   "devDependencies": {
-    "@types/matter-js": "^0.20.2",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

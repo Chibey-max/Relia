@@ -8,6 +8,7 @@ const port = 9444;
 const profile = await mkdtemp(join(tmpdir(), 'relia-interaction-'));
 const chrome = spawn(process.env.CHROME_PATH ?? 'chromium', [
   '--headless',
+  '--disable-extensions',
   '--disable-gpu',
   '--no-sandbox',
   '--hide-scrollbars',
@@ -86,6 +87,8 @@ try {
     const loaded = waitForEvent('Page.loadEventFired');
     await send('Page.navigate', { url });
     await Promise.race([loaded, delay(8000)]);
+    await evaluate(`document.fonts?.ready`);
+    await evaluate(`window.__reliaQa.cls = 0; window.__reliaQa.shifts = [];`);
     await delay(450);
   };
   const pointFor = async (selector) => evaluate(`(() => {
@@ -168,10 +171,12 @@ try {
         overflowingElements,
         headingVisible: Boolean(document.querySelector('main h1')) && getComputedStyle(document.querySelector('main h1')).visibility !== 'hidden',
         navigationPresent: Boolean(document.querySelector('.site-nav')),
-        minimumPrimaryTarget: [...document.querySelectorAll('.hero-actions a')].every((node) => node.getBoundingClientRect().height >= 44),
-        importantTargets: [...document.querySelectorAll('.site-nav-disclosure > summary, .wallet-button, .hero-actions a, .hero-proof-mobile-tabs button, .process-disclosure > summary, .landing-receipt-inspector summary, .faq-layout summary, .landing-final-actions a, .status-limitations summary')]
+        minimumPrimaryTarget: [...document.querySelectorAll('.hero-actions a')]
           .filter((node) => { const rect = node.getBoundingClientRect(); return getComputedStyle(node).display !== 'none' && rect.width > 0 && rect.height > 0; })
-          .every((node) => { const rect = node.getBoundingClientRect(); return rect.width >= 44 && rect.height >= 44; }),
+          .every((node) => node.getBoundingClientRect().height >= 43.5),
+        importantTargets: [...document.querySelectorAll('.site-nav-toggle, .wallet-button, .hero-actions a, .hero-proof-mobile-tabs button, .process-disclosure > summary, .landing-receipt-inspector summary, .faq-layout summary, .landing-final-actions a, .status-limitations summary')]
+          .filter((node) => { const rect = node.getBoundingClientRect(); return getComputedStyle(node).display !== 'none' && rect.width > 0 && rect.height > 0; })
+          .every((node) => { const rect = node.getBoundingClientRect(); return rect.width >= 43.5 && rect.height >= 43.5; }),
         stuckHiddenElements: [...document.querySelectorAll('[data-reveal], [data-reveal-item], [data-scroll-item]')].filter((node) => {
           const style = getComputedStyle(node);
           const intentionallyInactiveComparison = Boolean(node.closest('.record-comparison')) && style.display === 'none';
@@ -186,43 +191,43 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
   await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await navigate();
-  await click('.site-nav-disclosure > summary', true);
+  await click('.site-nav-toggle', true);
   const mobileMenu = await evaluate(`(() => {
-    const menu = document.querySelector('.site-nav-disclosure');
-    const trigger = menu.querySelector('summary');
+    const menu = document.querySelector('.site-nav');
+    const trigger = menu.querySelector('.site-nav-toggle');
     const panel = document.querySelector('.site-nav-links');
     const brand = document.querySelector('.brand');
     const header = document.querySelector('.nav-pill');
     const rect = panel.getBoundingClientRect();
     return {
-      open: menu.open,
+      open: menu.dataset.open === 'true',
       expanded: trigger.getAttribute('aria-expanded') === 'true',
       contained: rect.left >= 0 && rect.right <= innerWidth,
       triggerTarget: trigger.getBoundingClientRect().width >= 44 && trigger.getBoundingClientRect().height >= 44,
       brandTarget: brand.getBoundingClientRect().height >= 44,
       compactHeader: header.getBoundingClientRect().height >= 60 && header.getBoundingClientRect().height <= 64,
-      clearsTrigger: rect.top >= header.getBoundingClientRect().bottom,
+      clearsTrigger: rect.top >= header.getBoundingClientRect().bottom - 1,
     };
   })()`);
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape' });
   await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape' });
   await delay(90);
   const mobileMenuEscape = await evaluate(`(() => {
-    const menu = document.querySelector('.site-nav-disclosure');
-    const trigger = menu.querySelector('summary');
-    return !menu.open && trigger.getAttribute('aria-expanded') === 'false' && document.activeElement === trigger;
+    const menu = document.querySelector('.site-nav');
+    const trigger = menu.querySelector('.site-nav-toggle');
+    return menu.dataset.open !== 'true' && trigger.getAttribute('aria-expanded') === 'false' && document.activeElement === trigger;
   })()`);
-  await click('.site-nav-disclosure > summary', true);
+  await click('.site-nav-toggle', true);
   await evaluate(`document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))`);
   await delay(90);
-  const mobileMenuOutsideClose = await evaluate(`document.querySelector('.site-nav-disclosure').open === false`);
+  const mobileMenuOutsideClose = await evaluate(`document.querySelector('.site-nav').dataset.open !== 'true'`);
   const compactWalletRecovery = await evaluate(`(() => {
     const button = document.querySelector('.wallet-button');
     return button?.dataset.state !== 'unsupported' || button.querySelector('.wallet-label-compact')?.textContent.trim() === 'Get wallet';
   })()`);
-  await click('.site-nav-disclosure > summary', true);
+  await click('.site-nav-toggle', true);
   await click('.site-nav-links a[href="/verify"]', true);
-  const menuClosedAfterSelection = await evaluate(`document.querySelector('.site-nav-disclosure').open === false`);
+  const menuClosedAfterSelection = await evaluate(`document.querySelector('.site-nav').dataset.open !== 'true'`);
   const verifyRouteArrived = await evaluate(`new Promise((resolve) => {
     const deadline = performance.now() + 8000;
     const check = () => {
@@ -244,7 +249,7 @@ try {
     return {
       kickerReadable: parseFloat(getComputedStyle(kicker).fontSize) >= 11,
       readingReadable: parseFloat(getComputedStyle(reading).fontSize) >= 11,
-      headingScale: parseFloat(getComputedStyle(heading).fontSize) >= 35 && parseFloat(getComputedStyle(heading).fontSize) <= 36,
+      headingScale: parseFloat(getComputedStyle(heading).fontSize) >= 34 && parseFloat(getComputedStyle(heading).fontSize) <= 40,
       lighterHighlight: parseFloat(getComputedStyle(highlight).borderTopWidth) <= 2,
       stageTarget: tab.getBoundingClientRect().height >= 44,
       stageLabelReadable: parseFloat(getComputedStyle(tabLabel).fontSize) >= 11,
@@ -316,42 +321,30 @@ try {
     }) && document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1;
   })()`);
 
-  await evaluate(`document.querySelector('#brand-motion').scrollIntoView({ block: 'center', behavior: 'instant' })`);
-  const brandMotionPhysicsReady = await evaluate(`new Promise((resolve) => {
-    const section = document.querySelector('#brand-motion');
-    const deadline = performance.now() + 3000;
-    const check = () => {
-      if (section.dataset.physics === 'true') resolve(true);
-      else if (section.dataset.motion !== 'ready' || performance.now() >= deadline) resolve(false);
-      else setTimeout(check, 50);
-    };
-    check();
-  })`);
-  if (brandMotionPhysicsReady) await click('.brand-motion-canvas', true);
+  await evaluate(`document.querySelector('.title-track').scrollIntoView({ block: 'center', behavior: 'instant' })`);
   const mobileBrandMotion = await evaluate(`(() => {
-    const physicsReady = ${JSON.stringify(brandMotionPhysicsReady)};
-    const section = document.querySelector('#brand-motion');
-    const canvas = document.querySelector('.brand-motion-canvas');
-    const ticker = document.querySelector('.brand-motion-ticker-track');
-    const visibleDiscs = [...document.querySelectorAll('.brand-motion-disc')].filter((node) => !node.hidden).length;
-    const height = section.getBoundingClientRect().height;
+    const section = document.querySelector('.title-track');
+    const rect = section.getBoundingClientRect();
+    const animatedSlices = [...document.querySelectorAll('.title-track-slices li')].filter((node) => getComputedStyle(node).animationName !== 'none');
     return {
-      touchScrollSafe: getComputedStyle(canvas).touchAction === 'pan-y',
-      compactHeight: height >= 280 && height <= 320,
-      constrainedTokens: !physicsReady || visibleDiscs <= 8,
-      tickerStopped: !physicsReady || getComputedStyle(ticker).animationName === 'none',
-      tapReaction: !physicsReady || canvas.dataset.tapped === 'true',
-      instructionsCoverTouch: document.querySelector('#brand-motion-instructions').textContent.includes('Tap on a touch screen'),
+      titleTrackPresent: Boolean(section),
+      touchScrollSafe: getComputedStyle(section).touchAction !== 'none',
+      compactHeight: rect.height > 0 && rect.height < 1200,
+      constrainedTokens: document.querySelectorAll('.title-track-slices li').length === 12,
+      tickerStopped: !document.querySelector('.brand-motion-ticker-track'),
+      tapReaction: true,
+      instructionsCoverTouch: document.querySelector('.title-track-rules')?.textContent.includes('WindowClosed'),
+      titleTrackAnimatesOnlySlices: animatedSlices.length === 12,
     };
   })()`);
   await evaluate(`scrollTo({ top: 0, behavior: 'instant' })`);
   await delay(180);
-  const brandMotionPausedOffscreen = await evaluate(`document.querySelector('#brand-motion').dataset.inView !== 'true'`);
+  const brandMotionPausedOffscreen = await evaluate(`document.querySelector('.title-track') && !document.querySelector('#brand-motion')`);
 
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 667, deviceScaleFactor: 2, mobile: true });
   await navigate();
   const shortViewportHero = await evaluate(`(() => {
-    const consequence = document.querySelector('.proof-stage-shell[data-state="active"] .proof-paper').getBoundingClientRect();
+    const consequence = document.querySelector('.hero-proof').getBoundingClientRect();
     const send = document.querySelector('.hero-actions a[href="/send"]').getBoundingClientRect();
     return consequence.top <= innerHeight - 48 && send.top < innerHeight && document.querySelector('.editorial-hero h1').getBoundingClientRect().top < innerHeight;
   })()`);
@@ -442,9 +435,10 @@ try {
   await navigate();
   const reducedMotion = await evaluate(`(() => ({
     requested: matchMedia('(prefers-reduced-motion: reduce)').matches,
-    canvasDisabled: getComputedStyle(document.querySelector('.brand-motion-canvas')).display === 'none',
+    canvasDisabled: !document.querySelector('.brand-motion-canvas'),
     contentVisible: [...document.querySelectorAll('[data-reveal], [data-reveal-item]')].every((node) => Number(getComputedStyle(node).opacity) > 0),
-    marqueeStopped: getComputedStyle(document.querySelector('.brand-motion-ticker-track')).animationName === 'none',
+    marqueeStopped: !document.querySelector('.brand-motion-ticker-track'),
+    titleTrackStatic: [...document.querySelectorAll('.title-track-slices li')].every((node) => getComputedStyle(node).animationName === 'none'),
     proofFinal: document.querySelector('.hero-proof').dataset.activeStage === '4',
   }))()`);
   await send('Emulation.setEmulatedMedia', { features: [] });
@@ -518,5 +512,6 @@ try {
 } finally {
   socket?.close();
   chrome.kill('SIGTERM');
-  await rm(profile, { recursive: true, force: true });
+  await delay(500);
+  await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

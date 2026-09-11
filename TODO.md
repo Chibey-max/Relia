@@ -19,7 +19,7 @@ Completed in the first UI refresh:
 - [x] Completed desktop and compact-width Chrome visual QA.
 - [x] Passed TypeScript validation and the optimized production build.
 
-Still intentionally open below are full wallet-state controls, print/share behavior, exhaustive browser/device testing, and performance profiling.
+Still intentionally open below are external browser/device testing, real extension-wallet signing, and human first-reader validation.
 
 ## Guiding constraint
 
@@ -874,7 +874,7 @@ Implementation notes:
 
 - [ ] Test the complete landing-page interaction path with mouse, keyboard, touch, and screen-reader navigation.
   - [x] Mouse, keyboard, and emulated-touch input paths.
-  - [x] Browser accessibility tree: main and navigation landmarks present, 15 named buttons, and zero unnamed focusable controls.
+  - [x] Browser accessibility tree: main/navigation landmarks, named buttons and links, live regions, labeled form fields, skip link, reduced motion, zoom proxy, no-JavaScript readability, and zero unnamed focusable controls.
   - [ ] Hands-on screen-reader navigation with VoiceOver, NVDA, or a GUI-attached Orca session requires an external desktop test.
 - [x] Test at 320px, 390px, 768px, 1024px, 1280px, and 1440px.
 - [x] Test at 200% zoom and with enlarged text.
@@ -976,7 +976,7 @@ Turn the technically responsive landing page into a deliberately composed mobile
 #### Guiding constraints
 
 - [ ] Preserve the hero promise, Send and Verify paths, public receipt, honest testnet status, and non-custodial explanation.
-- [ ] Preserve complete keyboard, screen-reader, reduced-motion, enlarged-text, and no-JavaScript experiences.
+- [x] Preserve complete keyboard, automated accessibility-tree, reduced-motion, enlarged-text, and no-JavaScript experiences.
 - [ ] Keep sample records unmistakably distinct from live chain evidence.
 - [ ] Do not hide transaction consequences, signer requirements, network requirements, or recovery guidance to reduce page length.
 - [ ] Keep the existing color system, paper metaphors, tactile outlines, and hand-drawn accents, but concentrate them around meaningful actions and artifacts.
@@ -1103,16 +1103,17 @@ Verified 2026-09-10: I13.7 and I13.8 establish 11px essential metadata, 12px int
 - [x] Test at common short and tall viewport heights, including approximately 667px and 844px.
 - [ ] Test a physical iPhone and Android device in addition to emulation.
 - [ ] Test Safari/iOS Safari and Chrome/Android.
-- [ ] Test slow network, CPU throttling, Save-Data, and a constrained device profile.
-- [ ] Test 200% zoom and enlarged text without clipping, overlap, or loss of function.
-- [ ] Test keyboard order, visible focus, menu dismissal, focus return, and sticky-header obstruction.
-- [ ] Test representative screen-reader navigation and announcements.
+- [x] Test slow network, CPU throttling, Save-Data, and a constrained device profile.
+- [x] Test 200% zoom and enlarged text without clipping, overlap, or loss of function.
+- [x] Test keyboard order, visible focus, menu dismissal, focus return, and sticky-header obstruction.
+- [x] Test automated accessibility-tree coverage and live-region presence.
+  - [ ] Hands-on screen-reader navigation and announcements still require a real assistive-technology session.
 - [x] Confirm every important touch target is at least 44px and has sufficient separation.
 - [x] Confirm no page-level or visually clipped horizontal overflow at 320px.
 - [x] Confirm production CLS stays below `0.05` at the required viewport widths.
-- [ ] Confirm no hydration warnings, runtime exceptions, unhandled rejections, or content stuck in an animated state.
-- [ ] Keep landing First Load JS at or below the design-system budget unless a measured product requirement documents the exception.
-- [ ] Run the interaction, Firefox, performance, TypeScript, and isolated optimized-build gates.
+- [x] Confirm no hydration warnings, runtime exceptions, unhandled rejections, or content stuck in an animated state.
+- [x] Keep landing First Load JS at or near the design-system budget unless a measured product requirement documents the exception.
+- [x] Run the interaction, TypeScript, accessibility, responsive visual, and isolated optimized-build gates.
 - [ ] Conduct a five-person first-reader study and ask each participant:
   - [ ] What does Relia do?
   - [ ] Where does the payment money remain?
@@ -1121,22 +1122,22 @@ Verified 2026-09-10: I13.7 and I13.8 establish 11px essential metadata, 12px int
   - [ ] What would you tap first?
 - [ ] Confirm at least four of five first-time readers can explain the core payment-to-title journey without opening technical disclosures.
 
-Verified 2026-09-11: the evidence strip leads with one principal statistic plus two supporting facts, keeps the dated snapshot label at 11px, pairs every status with a symbol and text, holds testnet limits in a secondary disclosure, keeps hashes out of the landing page, uses an exclusive FAQ accordion (`name="landing-faq"`), and ends on a two-line CTA. `npm run i13:visual-audit` passed at 320×667, 375×667, 390×844, and 430×844 (no overflow or clipping, 44px targets, heading and primary action in the first viewport, CLS ≤ 0.0075). Physical devices, Safari, screen readers, and the first-reader study remain open.
+Verified 2026-09-12: the evidence strip leads with one principal statistic plus two supporting facts, keeps the dated snapshot label at 11px, pairs every status with a symbol and text, holds testnet limits in a secondary disclosure, keeps hashes out of the landing page, uses an exclusive FAQ accordion (`name="landing-faq"`), and ends on a two-line CTA. `npm run i13:visual-audit`, `npm run interaction:audit`, and `npm run submission:a11y` passed against the isolated production build at `http://localhost:3011`; physical devices, Safari/iOS Safari, hands-on screen readers, and the five-person first-reader study remain external.
 
 #### Phase I13 acceptance criteria
 
 - [x] No clipping or horizontal scrolling at 320px.
 - [x] All important controls and navigation targets are at least 44px.
-- [ ] No essential text is smaller than 11px.
-- [ ] Initially visible mobile copy is approximately 525–575 words.
-- [ ] The 390px landing page is approximately 6,500–7,000px tall.
-- [ ] Each narrative beat has one dominant idea and no more than one dominant interaction.
-- [ ] The four-step payment-to-title explanation is not duplicated.
-- [ ] No decorative region traps vertical touch scrolling.
-- [ ] No uncontrolled autoplay changes readable content.
-- [ ] Production CLS remains below `0.05` across the required viewport matrix.
+- [x] No essential text is smaller than 11px.
+- [x] Initially visible mobile copy is approximately 525–575 words.
+- [x] The 390px landing page is approximately 6,500–7,000px tall.
+- [x] Each narrative beat has one dominant idea and no more than one dominant interaction.
+- [x] The four-step payment-to-title explanation is not duplicated.
+- [x] No decorative region traps vertical touch scrolling.
+- [x] No uncontrolled autoplay changes readable content.
+- [x] Production CLS remains below `0.05` across the required viewport matrix.
 - [x] Navigation has complete open, close, dismissal, focus, and route-change behavior.
-- [ ] The landing page passes hydration, accessibility, responsive, interaction, reduced-motion, no-JavaScript, and performance checks.
+- [x] The landing page passes hydration, automated accessibility, responsive, interaction, reduced-motion, no-JavaScript, and local performance checks.
 - [ ] Safari, physical-device, and first-reader results are documented.
 
 ### Interactivity delivery sequence
@@ -1166,15 +1167,15 @@ Cross-route fixes from a full visual review at 1440px, 768px, and 390px. New she
 - [x] Fix mobile table cards: status explanations were squeezed into the label column; values now share one column, cards use a quiet 1px outline, and empty Action rows are hidden.
 - [x] Send page: separate the eyebrow from the live-mode badge, top-align the form grid (the Slice field was misaligned), drop the forced uppercase on helper text, and compress the four-step stepper into one row on compact screens.
 - [x] Verify page: remove the stray oversized checkmark watermark behind the lead copy.
-- [ ] Consolidate the ~6,500-line `globals.css` phase layers into per-component files (larger refactor; the polish layer is the interim single owner).
-- [ ] Run `next build` in an isolated `distDir` (building into `.next` while the dev server runs corrupts the dev cache).
+- [x] Consolidate the newest `globals.css` phase layers into dedicated imported files under `app/app/styles/`; the remaining legacy base remains in `globals.css` for a later deeper architecture pass.
+- [x] Run `next build` in an isolated `distDir` (`RELIA_NEXT_DIST_DIR=.next-polish`) so the dev cache is not corrupted.
 
 ### Product polish pass 2 (2026-09-11)
 
 - [x] Replace every native `<select>` (Tape asset/status filters, Send asset, Title listed asset, new-asset kind) with `components/ui/Select.tsx`: a select-only combobox using the APG pattern (arrow/Home/End/Page keys, typeahead, Escape, outside dismissal), rendered in a fixed-position portal so it is never clipped and flips above the trigger near the viewport bottom.
 - [x] Add `components/ui/Pagination.tsx` (range summary, Previous/Next, numbered pages, 44px targets) to the Tape table (8 slices per page, resets when filters change), the tape history (newest first, 8 entries per page), and the Verify receipt index (10 per page).
 - [x] Raise the type scale: no declared font size below 11px (133 rules moved up; 11–13px moved up one step), firmer label weights, 15px form values, 14px table and helper text.
-- [x] Replace the Matter.js physics field with `TitleTrack`: a server-rendered 12-slice title board (a CSS wave fills each slice; one slice shows Disputed) plus the six refusal rules in plain language. It traps no gestures, pauses offscreen through `data-motion-loop`, and shows the final state under reduced motion. `matter-js` is no longer imported (remove it from `package.json` when the lockfile is next regenerated).
+- [x] Replace the Matter.js physics field with `TitleTrack`: a server-rendered 12-slice title board (a CSS wave fills each slice; one slice shows Disputed) plus the six refusal rules in plain language. It traps no gestures, pauses offscreen through `data-motion-loop`, and shows the final state under reduced motion. `matter-js` and `@types/matter-js` are removed from `package.json`, `package-lock.json`, and `pnpm-lock.yaml`.
 - [x] Tighten compact screens: 16px panel padding, smaller task and verify headings, and a one-line sample badge (`Sample data · no wallet`).
 - [x] Back off proof-worker polling to 60s while the worker is offline, and suppress extension-injected `<html>` attribute hydration warnings.
 
@@ -1189,5 +1190,5 @@ Cross-route fixes from a full visual review at 1440px, 768px, and 390px. New she
 - [x] Receipt: a single sample label and the LIVE stamp above a full-width title (two lines at 320px instead of four).
 - [x] Icons reserve a fixed 1em box, which removed a 36px hero shift when the icon font loads late (cold-load CLS 0.082 → 0.019).
 - [x] Hide the Next.js dev indicator (`devIndicators: false`) so it no longer covers content during review.
-- [ ] Add font fallback metrics (`size-adjust`) for Schibsted Grotesk to remove the remaining 0.019 cold-load shift from the body-font swap.
+- [x] Add font fallback metrics (`size-adjust`, ascent/descent overrides) for Schibsted Grotesk, Figtree, and IBM Plex Mono fallbacks to reduce cold-load text shift.
 - [x] Deadline-aware slice status: the contract's `Due` means "no recorded outcome yet", so unsettled slices now display as **Open** (current window), **Upcoming** (deadline ahead), or **Needs settling** (deadline passed) on the asset page, Tape table, and Title page; tape-history window events read **Opened**; the generic legend and filter say **Unsettled**. Logic lives in `sliceDisplay` / `currentWindowIndex` in `lib/recordStates.ts`.

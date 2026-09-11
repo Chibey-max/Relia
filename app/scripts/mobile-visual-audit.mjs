@@ -96,7 +96,7 @@ try {
 
     results.push(await evaluate(`(() => {
       const visible = (node) => { const style = getComputedStyle(node); const rect = node.getBoundingClientRect(); return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0; };
-      const targets = [...document.querySelectorAll('.site-nav-disclosure > summary, .wallet-button, .hero-actions a, .hero-proof-mobile-tabs button, .process-disclosure > summary, .landing-receipt-inspector summary, .faq-layout summary, .landing-final-actions a')].filter(visible);
+      const targets = [...document.querySelectorAll('.site-nav-toggle, .wallet-button, .hero-actions a, .hero-proof-mobile-tabs button, .process-disclosure > summary, .landing-receipt-inspector summary, .faq-layout summary, .landing-final-actions a')].filter(visible);
       const clipped = [...document.querySelectorAll('main h1, main h2, main h3, main p, main a, main button, main summary')].filter(visible).filter((node) => { const rect = node.getBoundingClientRect(); return rect.left < -1 || rect.right > innerWidth + 1; });
       return {
         width: innerWidth, height: innerHeight,
@@ -121,5 +121,6 @@ try {
 } finally {
   socket?.close();
   chrome.kill('SIGTERM');
-  await rm(profile, { recursive: true, force: true });
+  await delay(500);
+  await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }

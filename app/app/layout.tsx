@@ -6,6 +6,9 @@ import { ClientMotion } from '@/components/ClientMotion';
 import { WalletConnect } from '@/components/WalletConnect';
 import { SiteNav } from '@/components/SiteNav';
 import './globals.css';
+import './styles/product-polish.css';
+import './styles/mobile-composition.css';
+import './styles/submission-readiness.css';
 
 export const metadata = {
   title: 'Relia',
@@ -24,7 +27,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0&display=swap" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=Schibsted+Grotesk:wght@400;500;600;700&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..700,0..1,0&display=optional" />
       </head>
       <body>
         <a className="skip-link" href="#main">Skip to content</a>

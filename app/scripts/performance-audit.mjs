@@ -10,6 +10,7 @@ const port = 9333;
 const profile = await mkdtemp(join(tmpdir(), 'relia-perf-'));
 const chrome = spawn(process.env.CHROME_PATH ?? 'chromium', [
   '--headless',
+  '--disable-extensions',
   '--disable-gpu',
   '--no-sandbox',
   '--hide-scrollbars',
@@ -93,9 +94,21 @@ try {
           value: { saveData: true },
         });
       } catch {}` : ''}
-      window.__reliaPerformance = { cls: 0, longTasks: [], events: [] };
+      window.__reliaPerformance = { cls: 0, shifts: [], longTasks: [], events: [] };
       try { new PerformanceObserver((list) => list.getEntries().forEach((entry) => {
-        if (!entry.hadRecentInput) window.__reliaPerformance.cls += entry.value;
+        if (!entry.hadRecentInput) {
+          window.__reliaPerformance.cls += entry.value;
+          window.__reliaPerformance.shifts.push({
+            value: Number(entry.value.toFixed(4)),
+            sources: (entry.sources ?? []).map((source) => {
+              const node = source.node;
+              if (!node) return 'unknown';
+              const id = node.id ? '#' + node.id : '';
+              const classes = typeof node.className === 'string' && node.className ? '.' + node.className.trim().replace(/\\s+/g, '.') : '';
+              return (node.tagName?.toLowerCase() ?? 'node') + id + classes;
+            }),
+          });
+        }
       })).observe({ type: 'layout-shift', buffered: true }); } catch {}
       try { new PerformanceObserver((list) => list.getEntries().forEach((entry) => {
         window.__reliaPerformance.longTasks.push(entry.duration);
@@ -142,12 +155,13 @@ try {
           transferredScriptKb: Math.round(scripts.reduce((sum, entry) => sum + entry.transferSize, 0) / 1024),
           decodedScriptKb: Math.round(scripts.reduce((sum, entry) => sum + entry.decodedBodySize, 0) / 1024),
           cls: Number(measurements.cls.toFixed(4)),
+          shifts: measurements.shifts,
           longTaskCount: measurements.longTasks.length,
           longTaskTotalMs: Math.round(measurements.longTasks.reduce((sum, value) => sum + value, 0)),
           maxInteractionDurationMs: Math.round(Math.max(0, ...measurements.events)),
           domNodes: document.getElementsByTagName('*').length,
           saveDataEnabled: navigator.connection?.saveData === true,
-          brandCanvasDisplayNone: getComputedStyle(document.querySelector('.brand-motion-canvas')).display === 'none',
+          brandCanvasDisplayNone: !document.querySelector('.brand-motion-canvas') && Boolean(document.querySelector('.title-track')),
           primaryNavigationPresent: Boolean(document.querySelector('nav a[href="/send"]')),
           mainContentPresent: Boolean(document.querySelector('main h1')),
         };
@@ -166,8 +180,12 @@ try {
     jsHeapMb: Number(((browserMetrics.JSHeapUsedSize ?? 0) / 1024 / 1024).toFixed(1)),
   };
   process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+  if (!output.url.startsWith('http') || !output.mainContentPresent || !output.primaryNavigationPresent) {
+    process.exitCode = 1;
+  }
 } finally {
   socket?.close();
   chrome.kill('SIGTERM');
-  await rm(profile, { recursive: true, force: true });
+  await delay(500);
+  await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
