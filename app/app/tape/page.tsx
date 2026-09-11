@@ -10,9 +10,11 @@ import { walletClientFor, walletChains, type WalletActivity } from '@/lib/wallet
 import { LoadingMessage, ProgressStatus, TableSkeleton } from '@/components/LoadingUI';
 import { useLoadingTiming } from '@/lib/useLoadingTiming';
 import { RecordStateBadge } from '@/components/ui';
-import { RECORD_STATES, recordStateFromStatus } from '@/lib/recordStates';
+import { RECORD_STATES, recordStateFromStatus, sliceDisplay } from '@/lib/recordStates';
 import { TableIdentifier } from '@/components/TableIdentifier';
 import { DataEmptyState } from '@/components/ui';
+import { Select } from '@/components/ui/Select';
+import { Pagination, clampPage } from '@/components/ui/Pagination';
 import { ReclaimAction, type ReclaimSliceSnapshot } from '@/components/ReclaimAction';
 import { TapeHistory } from '@/components/TapeHistory';
 import { SignerContext } from '@/components/SignerContext';
@@ -37,6 +39,7 @@ interface Row {
 }
 
 const ZERO = `0x${'0'.repeat(64)}`;
+const TAPE_PAGE_SIZE = 8;
 
 export default function TapePage() {
   const wallet = useWalletSnapshot();
@@ -54,6 +57,7 @@ export default function TapePage() {
   const [shopFilter, setShopFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [actionableOnly, setActionableOnly] = useState(false);
+  const [page, setPage] = useState(0);
   const timing = useLoadingTiming(loading);
 
   function updateReclaimedRow(assetId: `0x${string}`, n: number, slice: ReclaimSliceSnapshot, transaction: `0x${string}`) {
@@ -164,6 +168,21 @@ export default function TapePage() {
       && (!actionableOnly || actionable);
   }), [actionableOnly, assetFilter, buyerFilter, rows, shopFilter, statusFilter]);
 
+  useEffect(() => { setPage(0); }, [actionableOnly, assetFilter, buyerFilter, shopFilter, statusFilter]);
+  const currentPage = clampPage(page, filteredRows.length, TAPE_PAGE_SIZE);
+  const pageRows = filteredRows.slice(currentPage * TAPE_PAGE_SIZE, (currentPage + 1) * TAPE_PAGE_SIZE);
+  // Per asset, the earliest unsettled slice whose deadline has not passed is the one open now.
+  const currentWindowByAsset = useMemo(() => {
+    const now = Date.now();
+    const current = new Map<string, number>();
+    for (const row of rows) {
+      if (recordStateFromStatus(row.status) !== 'due' || Number(row.windowEnd) * 1000 < now) continue;
+      const known = current.get(row.assetId);
+      if (known === undefined || row.n < known) current.set(row.assetId, row.n);
+    }
+    return current;
+  }, [rows]);
+
   return (
     <main className="task-main">
       <header className="task-header compact" data-reveal>
@@ -182,10 +201,10 @@ export default function TapePage() {
       <section className="screen-card data-surface" aria-busy={loading} aria-labelledby="all-title-slices-title" data-reveal>
         <div className="data-surface-head"><div><span className="mini-title">CREDITCOIN</span><h2 id="all-title-slices-title">All title slices</h2></div><span className="status-badge status-live"><MaterialIcon name="circle" /> LIVE READ</span></div>
         <div className="tape-filter-panel" aria-label="Filter title slices">
-          <label><span>Asset</span><select value={assetFilter} onChange={(event) => setAssetFilter(event.target.value)}><option value="">All assets</option>{assets.map((asset) => <option value={asset.assetId} key={asset.assetId}>{ASSET_KINDS[asset.kind] ?? asset.kind} | {shortId(asset.assetId)}</option>)}</select></label>
+          <div className="tape-filter-field"><span>Asset</span><Select label="Asset" value={assetFilter} onChange={setAssetFilter} options={[{ value: '', label: 'All assets' }, ...assets.map((asset) => ({ value: asset.assetId, label: `${ASSET_KINDS[asset.kind] ?? asset.kind} · ${shortId(asset.assetId)}` }))]} /></div>
           <label><span>Buyer</span><input value={buyerFilter} onChange={(event) => setBuyerFilter(event.target.value.trim())} placeholder="0x..." /></label>
           <label><span>Shop</span><input value={shopFilter} onChange={(event) => setShopFilter(event.target.value.trim())} placeholder="0x..." /></label>
-          <label><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="">All states</option>{Object.entries(RECORD_STATES).map(([key, definition]) => <option value={key} key={key}>{definition.label}</option>)}</select></label>
+          <div className="tape-filter-field"><span>Status</span><Select label="Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: '', label: 'All states' }, ...Object.entries(RECORD_STATES).map(([key, definition]) => ({ value: key, label: definition.label }))]} /></div>
           <label className="tape-actionable-filter"><input type="checkbox" checked={actionableOnly} onChange={(event) => setActionableOnly(event.target.checked)} /><span>Actionable only</span></label>
           <div className="tape-filter-result"><strong>{filteredRows.length}</strong><span>of {rows.length} slices</span>{(assetFilter || buyerFilter || shopFilter || statusFilter || actionableOnly) && <button type="button" onClick={() => { setAssetFilter(''); setBuyerFilter(''); setShopFilter(''); setStatusFilter(''); setActionableOnly(false); }}>Clear filters</button>}</div>
         </div>
@@ -208,9 +227,10 @@ export default function TapePage() {
               <tr><th scope="col">Asset</th><th scope="col">Kind</th><th scope="col">Slice</th><th scope="col">Status</th><th scope="col">Window ends</th><th scope="col">Payment</th><th scope="col">Action</th></tr>
             </thead>
             <tbody>
-              {filteredRows.map((r) => {
+              {pageRows.map((r) => {
                 const state = recordStateFromStatus(r.status);
-                const definition = state ? RECORD_STATES[state] : null;
+                const current = currentWindowByAsset.get(r.assetId) === r.n;
+                const definition = state ? sliceDisplay(state, r.windowEnd, current) : null;
                 const rowClass = state ? `row-${state}` : '';
                 return (
                   <tr key={`${r.assetId}-${r.n}`} className={rowClass}>
@@ -218,7 +238,7 @@ export default function TapePage() {
                     <td data-label="Kind">{ASSET_KINDS[r.kind] ?? r.kind}</td>
                     <td data-label="Slice">{r.n}</td>
                     <td data-label="Status">
-                      {state ? <RecordStateBadge state={state} /> : <span className="status-badge"><MaterialIcon name="help" /> Unknown</span>}
+                      {state ? <RecordStateBadge state={state} windowEnd={r.windowEnd} current={current} /> : <span className="status-badge"><MaterialIcon name="help" /> Unknown</span>}
                       {definition && <div className="aside-note table-status-note">{definition.meaning}<br /><strong>Next:</strong> {definition.nextAction}</div>}
                     </td>
                     <td data-label="Window ends">{new Date(Number(r.windowEnd) * 1000).toISOString().slice(0, 10)}</td>
@@ -238,6 +258,7 @@ export default function TapePage() {
             </tbody>
           </table>}
         </div>
+        {!loading && loadError == null && filteredRows.length > 0 && <Pagination label="Title slice pages" page={currentPage} total={filteredRows.length} pageSize={TAPE_PAGE_SIZE} onPageChange={setPage} noun="slices" />}
       </section>
 
       <TapeHistory />

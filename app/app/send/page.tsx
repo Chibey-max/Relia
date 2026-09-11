@@ -21,6 +21,7 @@ import { MaterialIcon } from '@/components/MaterialIcon';
 import { TaskSteps } from '@/components/TaskSteps';
 import { TransactionField } from '@/components/ui';
 import { ExperienceMode } from '@/components/ExperienceMode';
+import { Select } from '@/components/ui/Select';
 import { SignerContext } from '@/components/SignerContext';
 import { useWalletSnapshot } from '@/lib/useWalletSnapshot';
 import { ConfirmWriteAction } from '@/components/ConfirmWriteAction';
@@ -344,8 +345,8 @@ export default function SendPage() {
   return (
     <main className="task-main">
       <header className="task-header" data-reveal>
-        <div className="eyebrow"><span className="dot" />Write on Sepolia</div>
-        <ExperienceMode tone={liveWriteReady ? 'live' : 'unavailable'}>{liveWriteReady ? 'Live testnet action | wallet required' : 'Live action unavailable | sample explanation remains public'}</ExperienceMode>
+        <div className="task-header-meta"><div className="eyebrow"><span className="dot" />Write on Sepolia</div>
+        <ExperienceMode tone={liveWriteReady ? 'live' : 'unavailable'}>{liveWriteReady ? 'Live testnet action | wallet required' : 'Live action unavailable | sample explanation remains public'}</ExperienceMode></div>
         <h1>Send an installment</h1>
         <p className="lead">Review the record, pay the installment, then let the shop acknowledge the same payment.</p>
         <div className="task-context"><span>1 payment</span><span>1 acknowledgement</span><span>0 bridged funds</span></div>
@@ -360,12 +361,7 @@ export default function SendPage() {
           <div className="form-grid form-grid-spaced">
             <label className="field full">
               Asset
-              <select value={assetId} onChange={(e) => selectAsset(e.target.value)} onBlur={() => touch('assetId')} aria-invalid={showError('assetId')} aria-describedby={showError('assetId') ? 'asset-select-error' : undefined} disabled={Boolean(submittedPayTx)}>
-                <option value="">{assets.length ? 'Select a listed asset...' : isConfiguredContractAddress(addresses.registry) ? 'No assets listed yet' : 'Live registry is not configured'}</option>
-                {assets.map((a) => (
-                  <option key={a.assetId} value={a.assetId}>{shortId(a.assetId)} - buyer {a.buyer.slice(0, 8)}...</option>
-                ))}
-              </select>
+              <Select label="Asset" mono value={assets.some((a) => a.assetId === assetId) ? assetId : ''} onChange={selectAsset} onBlur={() => touch('assetId')} invalid={Boolean(showError('assetId'))} describedBy={showError('assetId') ? 'asset-select-error' : undefined} disabled={Boolean(submittedPayTx) || assets.length === 0} placeholder={assets.length ? 'Select a listed asset...' : isConfiguredContractAddress(addresses.registry) ? 'No assets listed yet' : 'Live registry is not configured'} options={assets.map((a) => ({ value: a.assetId, label: shortId(a.assetId), detail: `Buyer ${a.buyer.slice(0, 8)}...${a.buyer.slice(-4)}` }))} />
               {showError('assetId') && <small className="field-error" id="asset-select-error">{validation.assetId}</small>}
             </label>
             <label className="field full">

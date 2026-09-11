@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { encodeFunctionData, formatUnits, type Hex } from 'viem';
 import { ASSET_KINDS, registryAbi, tapeAbi, titlePassAbi } from '@/lib/abi';
 import { addresses, creditcoinClient, explorers } from '@/lib/chain';
-import { RECORD_STATES, recordStateFromStatus, type RecordState } from '@/lib/recordStates';
+import { recordStateFromStatus, sliceDisplay, type RecordState } from '@/lib/recordStates';
 import { walletClientFor, walletChains, type WalletActivity } from '@/lib/wallet';
 import { ErrorNotice } from '@/components/ErrorNotice';
 import { LoadingMessage, ProgressStatus, TitleSkeleton } from '@/components/LoadingUI';
@@ -270,15 +270,15 @@ export default function AssetDetailPage() {
             <ol className="asset-window-grid">
               {asset.slices.map((slice, index) => {
                 const timingState = windowState(index);
-                const definition = RECORD_STATES[slice.state];
+                const definition = sliceDisplay(slice.state, slice.windowEnd, index === firstOpenSlice);
                 const hasPayment = slice.payTx !== ZERO_HASH;
                 const canPay = timingState === 'open';
                 const canSettle = timingState === 'expired';
                 const canReclaim = slice.state === 'shortfall';
                 return (
                   <li className="asset-window-card" data-state={slice.state} data-window={timingState} key={slice.n}>
-                    <div className="asset-window-top"><span className="asset-window-number">{String(slice.n).padStart(2, '0')}</span><RecordStateBadge state={slice.state} /></div>
-                    <div className="asset-window-date"><span>{timingState}</span><strong>{dateLabel(asset.windows[index] ?? slice.windowEnd)}</strong><small>{exactDate(asset.windows[index] ?? slice.windowEnd)}</small></div>
+                    <div className="asset-window-top"><span className="asset-window-number">{String(slice.n).padStart(2, '0')}</span><RecordStateBadge state={slice.state} windowEnd={slice.windowEnd} current={index === firstOpenSlice} /></div>
+                    <div className="asset-window-date"><span>{timingState === 'expired' ? 'deadline passed' : timingState === 'open' ? 'open · deadline' : timingState}</span><strong>{dateLabel(asset.windows[index] ?? slice.windowEnd)}</strong><small>{exactDate(asset.windows[index] ?? slice.windowEnd)}</small></div>
                     <p>{definition.meaning}</p>
                     {hasPayment && (slice.state === 'live' || slice.state === 'disputed') && <Link className="asset-receipt-link" href={`/verify/${slice.payTx}`}>{slice.state === 'live' ? 'Open public receipt' : 'Inspect disputed payment'} <MaterialIcon name="arrow_forward" /></Link>}
                     <div className="asset-window-actions">

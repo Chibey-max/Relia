@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BrandMotion } from '@/components/BrandMotion';
+import { TitleTrack } from '@/components/TitleTrack';
 import { HeroProof } from '@/components/HeroProof';
 import { LandingReceipt } from '@/components/LandingReceipt';
 import { ProcessJourney } from '@/components/ProcessJourney';
@@ -90,7 +90,7 @@ export default function LandingPage() {
         <LandingReceipt />
       </Section>
 
-      <BrandMotion />
+      <TitleTrack />
 
       <Section spacing="none" tone="proof" composition="evidence" className="evidence-band landing-evidence-status landing-section-data" data-reveal data-reveal-group aria-labelledby="evidence-title">
         <div className="evidence-overview" data-reveal-item><div className="section-index section-index-light">04 | PUBLIC EVIDENCE</div><h2 id="evidence-title">Counted, not marketed.</h2><p>Live testnet facts, with the limits left visible.</p></div>

@@ -107,9 +107,9 @@ export function ProofStatusPanel({ assetId, n, payTx = '', ackTx = '', creditcoi
   useEffect(() => {
     if (!assetId && !payTx) return undefined;
     if (complete[5] || refusal) return undefined;
-    const timer = window.setInterval(() => void refresh(), 20_000);
+    const timer = window.setInterval(() => void refresh(), workerOnline === false ? 60_000 : 20_000);
     return () => window.clearInterval(timer);
-  }, [assetId, payTx, completeKey, refusal, refresh]);
+  }, [assetId, payTx, completeKey, refusal, refresh, workerOnline]);
 
   return (
     <section className="proof-status-panel" aria-labelledby="proof-status-title" aria-busy={loading || refreshing}>

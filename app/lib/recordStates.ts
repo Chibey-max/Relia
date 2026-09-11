@@ -35,13 +35,58 @@ export const RECORD_STATES: Record<RecordState, RecordStateDefinition> = {
     nextAction: 'Inspect the tape before beginning another payment.',
   },
   due: {
-    label: 'Due',
+    // Contract status `Due` means "no recorded outcome yet", not "payment owed now".
+    label: 'Unsettled',
     symbol: 'radio_button_unchecked',
-    meaning: 'The installment window is unresolved. It may still be waiting for payment, acknowledgement, or proof.',
-    nextAction: 'Send the installment, finish its proof, or settle it after the window closes.',
+    meaning: 'This window has no recorded outcome yet. It is open, upcoming, or past its deadline awaiting settlement.',
+    nextAction: 'Pay it while open, or settle it once the deadline passes.',
   },
 };
 
 export function recordStateFromStatus(status: number): RecordState | null {
   return ({ 1: 'due', 2: 'live', 3: 'shortfall', 4: 'disputed', 5: 'reclaimed' } as const)[status] ?? null;
+}
+
+export type WindowTiming = 'open' | 'upcoming' | 'overdue';
+
+type SliceDisplay = RecordStateDefinition & { tone: RecordState | 'neutral' };
+
+export const WINDOW_TIMING: Record<WindowTiming, SliceDisplay> = {
+  open: {
+    label: 'Open',
+    symbol: 'schedule',
+    tone: 'due',
+    meaning: 'This is the current payment window. The installment, the shop acknowledgement, and the proof must land before its deadline.',
+    nextAction: 'Send the installment for this slice.',
+  },
+  upcoming: {
+    label: 'Upcoming',
+    symbol: 'event',
+    tone: 'neutral',
+    meaning: 'This deadline is still ahead. Nothing is late.',
+    nextAction: 'Nothing is required yet.',
+  },
+  overdue: {
+    label: 'Needs settling',
+    symbol: 'hourglass_bottom',
+    tone: 'disputed',
+    meaning: 'The deadline passed without a proven installment. Anyone can settle it to record Shortfall, or Disputed if a payment was proven.',
+    nextAction: 'Settle the closed window.',
+  },
+};
+
+export function windowTiming(windowEnd: bigint | number, isCurrent: boolean, now = Date.now()): WindowTiming {
+  if (Number(windowEnd) * 1000 < now) return 'overdue';
+  return isCurrent ? 'open' : 'upcoming';
+}
+
+/** Earliest unsettled slice whose deadline has not passed: the window to pay now. */
+export function currentWindowIndex(slices: ReadonlyArray<{ state: RecordState | null; windowEnd: bigint | number }>, now = Date.now()): number {
+  return slices.findIndex((slice) => slice.state === 'due' && Number(slice.windowEnd) * 1000 >= now);
+}
+
+/** What to show for a slice: its recorded outcome, or its deadline position while unsettled. */
+export function sliceDisplay(state: RecordState, windowEnd?: bigint | number, isCurrent = false): SliceDisplay {
+  if (state !== 'due' || windowEnd === undefined) return { ...RECORD_STATES[state], tone: state };
+  return WINDOW_TIMING[windowTiming(windowEnd, isCurrent)];
 }

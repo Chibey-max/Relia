@@ -1,5 +1,6 @@
 'use client';
 
+import { Select } from '@/components/ui/Select';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { creditcoinClient, addresses } from '@/lib/chain';
@@ -9,7 +10,7 @@ import { LoadingMessage, TitleSkeleton } from '@/components/LoadingUI';
 import { useLoadingTiming } from '@/lib/useLoadingTiming';
 import { Badge, RecordStateBadge } from '@/components/ui';
 import { MaterialIcon } from '@/components/MaterialIcon';
-import { RECORD_STATES, recordStateFromStatus, type RecordState } from '@/lib/recordStates';
+import { RECORD_STATES, currentWindowIndex, recordStateFromStatus, sliceDisplay, type RecordState } from '@/lib/recordStates';
 import { TaskSteps } from '@/components/TaskSteps';
 import { loadListedAssets, shortId, type ListedAsset } from '@/lib/assets';
 
@@ -19,7 +20,7 @@ export default function TitlePage() {
   const [assets, setAssets] = useState<ListedAsset[]>([]);
   const [assetListError, setAssetListError] = useState<unknown>(null);
   const [assetId, setAssetId] = useState('');
-  const [cells, setCells] = useState<{ state: RecordState; payTx: string }[]>([]);
+  const [cells, setCells] = useState<{ state: RecordState; payTx: string; windowEnd: bigint}[]>([]);
   const [filled, setFilled] = useState(0);
   const [cleared, setCleared] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -73,6 +74,7 @@ export default function TitlePage() {
         setCells(sliceResults.map(([, slice]) => ({
           state: recordStateFromStatus(Number(slice.status)) ?? 'due',
           payTx: slice.payTx,
+          windowEnd: slice.windowEnd,
         })));
         setFilled(Number(nextFilled));
         setCleared(Boolean(nextCleared));
@@ -97,7 +99,7 @@ export default function TitlePage() {
       <div className="task-layout title-task-layout" data-reveal>
         <section className="lookup-panel">
           <div className="task-panel-heading"><span className="task-step">01</span><div><h2>Find a title</h2><p>The lookup stays public and does not request a signature.</p></div></div>
-          <label className="field full"><span>Listed asset</span><select value={assets.some((asset) => asset.assetId === assetId) ? assetId : ''} onChange={(event) => setAssetId(event.target.value)}><option value="">{assets.length ? 'Choose a public title...' : 'No listed assets loaded'}</option>{assets.map((asset) => <option value={asset.assetId} key={asset.assetId}>{ASSET_KINDS[asset.kind] ?? `Asset ${asset.kind}`} | {shortId(asset.assetId)} | buyer {asset.buyer.slice(0, 8)}...</option>)}</select></label>
+          <label className="field full"><span>Listed asset</span><Select label="Listed asset" value={assets.some((asset) => asset.assetId === assetId) ? assetId : ''} onChange={setAssetId} placeholder={assets.length ? 'Choose a public title...' : 'No listed assets loaded'} disabled={assets.length === 0} options={assets.map((asset) => ({ value: asset.assetId, label: `${ASSET_KINDS[asset.kind] ?? `Asset ${asset.kind}`} · ${shortId(asset.assetId)}`, detail: `Buyer ${asset.buyer.slice(0, 8)}...${asset.buyer.slice(-4)}` }))} /></label>
           {assetListError != null && <ErrorNotice error={assetListError} title="Could not load the asset picker" onRetry={() => { setAssetListError(null); loadListedAssets().then(setAssets).catch(setAssetListError); }} />}
           <label className="field full"><span>Creditcoin asset ID</span><input aria-describedby="asset-id-help" aria-invalid={assetId.length > 0 && !validAssetId} placeholder="0x..." value={assetId} onChange={(e) => setAssetId(e.target.value.trim())} /></label>
           <p id="asset-id-help" className={assetId.length > 0 && !validAssetId ? 'field-error' : 'field-help'}>{assetId.length > 0 && !validAssetId ? 'Enter exactly 32 bytes: 0x followed by 64 hexadecimal characters.' : 'A 32-byte identifier beginning with 0x.'}</p>
@@ -136,12 +138,13 @@ export default function TitlePage() {
           <div className="slice-board title-slices">
             {cells.map((cell, i) => {
               const n = i + 1;
-              const definition = RECORD_STATES[cell.state];
+              const current = i === currentWindowIndex(cells);
+              const definition = sliceDisplay(cell.state, cell.windowEnd, current);
               const hasPayment = cell.payTx && cell.payTx !== ZERO;
               return (
                 <div key={n} className={`slice-cell ${cell.state}`}>
                   <span className="slice-number">{String(n).padStart(2, '0')}</span>
-                  <RecordStateBadge state={cell.state} />
+                  <RecordStateBadge state={cell.state} windowEnd={cell.windowEnd} current={current} />
                   <p className="slice-state-meaning">{definition.meaning}</p>
                   {hasPayment ? (
                     <Link className="slice-action" href={`/verify/${cell.payTx}`}>

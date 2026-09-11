@@ -1,5 +1,6 @@
 'use client';
 
+import { Select } from '@/components/ui/Select';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { encodeFunctionData, formatUnits, isAddress, parseEventLogs, parseUnits, type Hex } from 'viem';
@@ -276,7 +277,7 @@ export default function NewAssetPage() {
           <section className="task-panel task-panel-primary listing-form" aria-labelledby="listing-terms-title">
             <div className="task-panel-heading"><span className="task-step">01</span><div><h2 id="listing-terms-title">Purchase terms</h2><p>These values become the immutable reference used by later proofs.</p></div></div>
             <div className="listing-form-grid">
-              <label className="field"><span>Asset kind</span><select value={kind} onChange={(event) => setKind(Number(event.target.value))}>{ASSET_KINDS.map((label, index) => <option value={index} key={label}>{label}</option>)}</select></label>
+              <label className="field"><span>Asset kind</span><Select label="Asset kind" value={String(kind)} onChange={(next) => setKind(Number(next))} options={ASSET_KINDS.map((label, index) => ({ value: String(index), label }))} /></label>
               <label className="field"><span>Installment amount | USDC</span><input inputMode="decimal" value={installment} onChange={(event) => setInstallment(event.target.value)} aria-invalid={attempted && Boolean(validation.installment)} />{attempted && validation.installment && <small className="field-error">{validation.installment}</small>}{sinkInstallmentAmount != null && parsedInstallment > 0n && parsedInstallment !== sinkInstallmentAmount && <small className="field-error">The Sepolia payment contract only ever pulls {(Number(sinkInstallmentAmount) / 1e6).toFixed(2)} USDC per slice, no matter what is entered here. Listing at a different amount will desync /send from this asset's declared terms.</small>}</label>
               <label className="field full"><span>Buyer address</span><input placeholder="0x..." value={buyer} onChange={(event) => setBuyer(event.target.value.trim())} aria-invalid={attempted && Boolean(validation.buyer)} />{attempted && validation.buyer && <small className="field-error">{validation.buyer}</small>}</label>
               <label className="field"><span>Creditcoin shop address</span><input placeholder="0x..." value={shopCtc} onChange={(event) => setShopCtc(event.target.value.trim())} aria-invalid={attempted && Boolean(validation.shopCtc)} />{attempted && validation.shopCtc && <small className="field-error">{validation.shopCtc}</small>}</label>

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { CopyButton } from '@/components/CopyButton';
 import { MaterialIcon } from '@/components/MaterialIcon';
-import { RECORD_STATES, type RecordState } from '@/lib/recordStates';
+import { RECORD_STATES, sliceDisplay, type RecordState } from '@/lib/recordStates';
 
 function classes(...values: Array<string | false | undefined>) {
   return values.filter(Boolean).join(' ');
@@ -23,9 +23,9 @@ export function Badge({ tone = 'neutral', symbol, children, className }: { tone?
   return <span className={classes('status-badge', 'ui-badge', `ui-badge-${tone}`, className)}>{symbol !== false && <MaterialIcon name={symbol ?? SYMBOLS[tone]} />}{children}</span>;
 }
 
-export function RecordStateBadge({ state, className }: { state: RecordState; className?: string }) {
-  const definition = RECORD_STATES[state];
-  return <Badge tone={state} symbol={definition.symbol} className={classes('record-state-badge', className)}>{definition.label}</Badge>;
+export function RecordStateBadge({ state, windowEnd, current = false, className }: { state: RecordState; windowEnd?: bigint | number; current?: boolean; className?: string }) {
+  const display = sliceDisplay(state, windowEnd, current);
+  return <Badge tone={display.tone} symbol={display.symbol} className={classes('record-state-badge', className)}>{display.label}</Badge>;
 }
 
 export function RecordStateContext({ state, compact = false, className }: { state: RecordState; compact?: boolean; className?: string }) {

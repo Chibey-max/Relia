@@ -9,7 +9,8 @@ import { ErrorNotice } from '@/components/ErrorNotice';
 import { LoadingMessage, TableSkeleton } from '@/components/LoadingUI';
 import { useLoadingTiming } from '@/lib/useLoadingTiming';
 import { TableIdentifier } from '@/components/TableIdentifier';
-import { Button, DataEmptyState } from '@/components/ui';
+import { DataEmptyState } from '@/components/ui';
+import { Pagination } from '@/components/ui/Pagination';
 import { MaterialIcon } from '@/components/MaterialIcon';
 
 interface ReceiptRow {
@@ -32,7 +33,7 @@ export default function VerifyIndexPage() {
   const [loadError, setLoadError] = useState<unknown>(null);
   const [formError, setFormError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
-  const [visibleCount, setVisibleCount] = useState(RECEIPT_PAGE_SIZE);
+  const [page, setPage] = useState(0);
   const timing = useLoadingTiming(loading);
   const hashInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,7 +60,7 @@ export default function VerifyIndexPage() {
           amount: event.args.amount as bigint,
           creditcoinTx: event.transactionHash,
         })));
-        setVisibleCount(RECEIPT_PAGE_SIZE);
+        setPage(0);
       } catch (e) {
         if (!cancelled) setLoadError(e);
       } finally {
@@ -143,7 +144,7 @@ export default function VerifyIndexPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {receipts.slice(0, visibleCount).map((receipt) => (
+                  {receipts.slice(page * RECEIPT_PAGE_SIZE, (page + 1) * RECEIPT_PAGE_SIZE).map((receipt) => (
                     <tr key={`${receipt.payTx}-${receipt.n}`}>
                       <td data-label="Asset"><TableIdentifier value={receipt.assetId} copyLabel="Copy asset ID" /></td>
                       <td data-label="Slice">{receipt.n} of 12</td>
@@ -155,10 +156,7 @@ export default function VerifyIndexPage() {
                   ))}
                 </tbody>
               </table>
-              <div className="receipt-index-pagination">
-                <span>Showing {Math.min(visibleCount, receipts.length)} of {receipts.length} receipts.</span>
-                {visibleCount < receipts.length && <Button variant="secondary" size="compact" onClick={() => setVisibleCount((count) => count + RECEIPT_PAGE_SIZE)}>Show {Math.min(RECEIPT_PAGE_SIZE, receipts.length - visibleCount)} more</Button>}
-              </div>
+              <Pagination label="Receipt pages" page={page} total={receipts.length} pageSize={RECEIPT_PAGE_SIZE} onPageChange={setPage} noun="receipts" />
             </>
           )}
         </div>

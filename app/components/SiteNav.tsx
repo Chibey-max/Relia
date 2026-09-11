@@ -11,10 +11,13 @@ const ROUTES = [
   { href: '/verify', label: 'Verify' },
 ];
 
+// Links always render so wide screens never depend on a closed <details>
+// (Chrome hides closed-details content regardless of author `display`).
+// Compact screens hide them behind one controlled menu button.
 export function SiteNav() {
   const pathname = usePathname();
-  const disclosureRef = useRef<HTMLDetailsElement>(null);
-  const triggerRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -25,7 +28,7 @@ export function SiteNav() {
     if (!open) return;
 
     const closeFromOutside = (event: PointerEvent) => {
-      if (!disclosureRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!navRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const closeFromKeyboard = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
@@ -43,35 +46,31 @@ export function SiteNav() {
   }, [open]);
 
   return (
-    <nav className="site-nav" aria-label="Primary">
-      <details
-        className="site-nav-disclosure"
-        ref={disclosureRef}
-        open={open}
-        onToggle={(event) => setOpen(event.currentTarget.open)}
+    <nav className="site-nav" aria-label="Primary" ref={navRef} data-open={open}>
+      <button
+        type="button"
+        className="site-nav-toggle"
+        ref={triggerRef}
+        aria-controls="primary-navigation-links"
+        aria-expanded={open}
+        aria-label={open ? 'Close primary navigation' : 'Open primary navigation'}
+        onClick={() => setOpen((value) => !value)}
       >
-        <summary
-          ref={triggerRef}
-          aria-controls="primary-navigation-links"
-          aria-expanded={open}
-          aria-label={open ? 'Close primary navigation' : 'Open primary navigation'}
-        >
-          <MaterialIcon name={open ? 'close' : 'menu'} />
-        </summary>
-        <div className="site-nav-links" id="primary-navigation-links">
-          {ROUTES.map((route) => {
-            const active = pathname === route.href || pathname.startsWith(`${route.href}/`);
-            return (
-              <Link href={route.href} aria-current={active ? 'page' : undefined} key={route.href} onClick={() => setOpen(false)}>
-                {route.label}
-              </Link>
-            );
-          })}
-          <Link className="nav-cta" href="/send" aria-current={pathname === '/send' ? 'page' : undefined} onClick={() => setOpen(false)}>
-            <span className="nav-cta-wide">Get started</span><span className="nav-cta-short">Send</span>
-          </Link>
-        </div>
-      </details>
+        <MaterialIcon name={open ? 'close' : 'menu'} />
+      </button>
+      <div className="site-nav-links" id="primary-navigation-links">
+        {ROUTES.map((route) => {
+          const active = pathname === route.href || pathname.startsWith(`${route.href}/`);
+          return (
+            <Link href={route.href} aria-current={active ? 'page' : undefined} key={route.href} onClick={() => setOpen(false)}>
+              {route.label}
+            </Link>
+          );
+        })}
+        <Link className="nav-cta" href="/send" aria-current={pathname === '/send' ? 'page' : undefined} onClick={() => setOpen(false)}>
+          Send an installment
+        </Link>
+      </div>
     </nav>
   );
 }

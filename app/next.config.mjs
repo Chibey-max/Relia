@@ -6,6 +6,8 @@ const appDir = dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 export default {
   reactStrictMode: true,
+  // The floating dev badge overlaps bottom-left content during mobile review.
+  devIndicators: false,
   outputFileTracingRoot: appDir,
   eslint: {
     ignoreDuringBuilds: true,

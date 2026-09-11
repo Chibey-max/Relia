@@ -5,7 +5,7 @@
  * write flow. Keeping them in one module prevents an interactive example from
  * drifting into something that looks like live contract state.
  */
-export const DEMO_DISCLOSURE = 'Interactive example | sample data | no wallet';
+export const DEMO_DISCLOSURE = 'Sample data · no wallet';
 
 export const DEMO_PROCESS = [
   {
