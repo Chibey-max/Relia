@@ -278,7 +278,7 @@ export default function AssetDetailPage() {
                 return (
                   <li className="asset-window-card" data-state={slice.state} data-window={timingState} key={slice.n}>
                     <div className="asset-window-top"><span className="asset-window-number">{String(slice.n).padStart(2, '0')}</span><RecordStateBadge state={slice.state} windowEnd={slice.windowEnd} current={index === firstOpenSlice} /></div>
-                    <div className="asset-window-date"><span>{timingState === 'expired' ? 'deadline passed' : timingState === 'open' ? 'open · deadline' : timingState}</span><strong>{dateLabel(asset.windows[index] ?? slice.windowEnd)}</strong><small>{exactDate(asset.windows[index] ?? slice.windowEnd)}</small></div>
+                    <div className="asset-window-date"><span>{timingState === 'expired' ? 'deadline passed' : timingState === 'open' ? 'open, deadline' : timingState}</span><strong>{dateLabel(asset.windows[index] ?? slice.windowEnd)}</strong><small>{exactDate(asset.windows[index] ?? slice.windowEnd)}</small></div>
                     <p>{definition.meaning}</p>
                     {hasPayment && (slice.state === 'live' || slice.state === 'disputed') && <Link className="asset-receipt-link" href={`/verify/${slice.payTx}`}>{slice.state === 'live' ? 'Open public receipt' : 'Inspect disputed payment'} <MaterialIcon name="arrow_forward" /></Link>}
                     <div className="asset-window-actions">

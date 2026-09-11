@@ -9,6 +9,7 @@ const ROUTES = [
   { href: '/tape', label: 'Tape' },
   { href: '/title', label: 'Title' },
   { href: '/verify', label: 'Verify' },
+  { href: '/judge', label: 'Judge' },
 ];
 
 // Links always render so wide screens never depend on a closed <details>

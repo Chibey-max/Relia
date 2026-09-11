@@ -29,8 +29,8 @@ export function Pagination({
   return (
     <nav className="ui-pagination" aria-label={label}>
       <p className="ui-pagination-summary" aria-live="polite">
-        <strong>{first}–{last}</strong> of {total} {noun}
-        <span aria-hidden="true"> · </span>
+        <strong>{first}-{last}</strong> of {total} {noun}
+        <span aria-hidden="true"> / </span>
         <span>Page {page + 1} of {pageCount}</span>
       </p>
       {pageCount > 1 && (

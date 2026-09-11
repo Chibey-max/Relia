@@ -201,7 +201,7 @@ export default function TapePage() {
       <section className="screen-card data-surface" aria-busy={loading} aria-labelledby="all-title-slices-title" data-reveal>
         <div className="data-surface-head"><div><span className="mini-title">CREDITCOIN</span><h2 id="all-title-slices-title">All title slices</h2></div><span className="status-badge status-live"><MaterialIcon name="circle" /> LIVE READ</span></div>
         <div className="tape-filter-panel" aria-label="Filter title slices">
-          <div className="tape-filter-field"><span>Asset</span><Select label="Asset" value={assetFilter} onChange={setAssetFilter} options={[{ value: '', label: 'All assets' }, ...assets.map((asset) => ({ value: asset.assetId, label: `${ASSET_KINDS[asset.kind] ?? asset.kind} · ${shortId(asset.assetId)}` }))]} /></div>
+          <div className="tape-filter-field"><span>Asset</span><Select label="Asset" value={assetFilter} onChange={setAssetFilter} options={[{ value: '', label: 'All assets' }, ...assets.map((asset) => ({ value: asset.assetId, label: `${ASSET_KINDS[asset.kind] ?? asset.kind}: ${shortId(asset.assetId)}` }))]} /></div>
           <label><span>Buyer</span><input value={buyerFilter} onChange={(event) => setBuyerFilter(event.target.value.trim())} placeholder="0x..." /></label>
           <label><span>Shop</span><input value={shopFilter} onChange={(event) => setShopFilter(event.target.value.trim())} placeholder="0x..." /></label>
           <div className="tape-filter-field"><span>Status</span><Select label="Status" value={statusFilter} onChange={setStatusFilter} options={[{ value: '', label: 'All states' }, ...Object.entries(RECORD_STATES).map(([key, definition]) => ({ value: key, label: definition.label }))]} /></div>

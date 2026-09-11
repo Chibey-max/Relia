@@ -378,7 +378,7 @@ export default function SendPage() {
             <label className="field">
               Installment
               <input value={`${(Number(amount) / 1e6).toFixed(2)} USDC`} readOnly />
-              <small className="field-help">This is what the payment contract actually pulls, read from its on-chain `installmentAmount()`, not a client-side guess.</small>
+              <small className="field-help">This is what the payment contract pulls from its on-chain `installmentAmount()`. It is not a client-side guess.</small>
             </label>
             <label className="field full">
               Shop on Sepolia

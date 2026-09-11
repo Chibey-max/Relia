@@ -30,7 +30,7 @@ export function TitleTrack() {
 
       <div className="title-track-board">
         <div className="title-track-board-head" aria-hidden="true">
-          <span>Sample title · Generator</span>
+          <span>Sample title: Generator</span>
           <span className="title-track-transfer"><MaterialIcon name="lock_open" />Transfer unlocks at 12/12</span>
         </div>
         <ol className="title-track-slices" aria-label="Sample twelve-slice title: eleven live slices and one disputed slice">
@@ -47,8 +47,8 @@ export function TitleTrack() {
           })}
         </ol>
         <div className="title-track-legend" aria-hidden="true">
-          <span><i data-state="live" />Live · payment and acknowledgement proven</span>
-          <span><i data-state="disputed" />Disputed · paid, shop stayed silent</span>
+          <span><i data-state="live" />Live: payment and acknowledgement proven</span>
+          <span><i data-state="disputed" />Disputed: paid, shop stayed silent</span>
         </div>
       </div>
 

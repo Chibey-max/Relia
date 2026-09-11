@@ -117,7 +117,7 @@ export function ProofStatusPanel({ assetId, n, payTx = '', ackTx = '', creditcoi
         <div><span className="mini-title">READ-ONLY PROOF OBSERVER</span><h2 id="proof-status-title">From payment fact to public receipt.</h2><p>Relia checks the worker automatically. Creditcoin attestation can take several minutes, and the payment remains recorded while it catches up.</p></div>
         <div className="proof-status-tools">
           <Badge tone={workerOnline ? stale ? 'due' : 'live' : workerOnline === false ? 'neutral' : 'due'}>{workerOnline ? stale ? 'Status may be stale' : 'Worker reachable' : workerOnline === false ? 'Worker feed unavailable' : 'Checking worker'}</Badge>
-          <Button variant="secondary" size="compact" onClick={() => void refresh()} busy={refreshing} busyLabel="Checking status" disabled={!assetId && !payTx}><MaterialIcon name="refresh" />Check now</Button>
+          <Button variant="secondary" size="compact" onClick={() => void refresh()} busy={refreshing} busyLabel="Checking" disabled={!assetId && !payTx}><MaterialIcon name="refresh" />Refresh</Button>
         </div>
       </header>
 
@@ -132,7 +132,7 @@ export function ProofStatusPanel({ assetId, n, payTx = '', ackTx = '', creditcoi
       {waitingForAck && <div className="proof-status-callout pending"><strong>Acknowledgement pending</strong><span>The payment is safe on Sepolia, but the shop has not yet published the matching acknowledgement. No proof or title update can happen until it does.</span></div>}
       {refusal && <div className="proof-status-callout refused" role="alert"><strong>Proof refused | {refusal.rule}</strong><span>{refusal.error}</span><small>This is a final rule verdict for this evidence pair, not a pending acknowledgement.</small></div>}
       {transientFailure && <div className="proof-status-callout failed" role="status"><strong>Proof processing failed</strong><span>The worker observed the source facts but could not advance them. Refresh after the worker recovers; the payment remains on Sepolia.</span></div>}
-      {!refusal && !transientFailure && complete[2] && !complete[5] && <div className="proof-status-callout pending" role="status"><strong>Proof is queued</strong><span>This part is intentionally asynchronous. Keep the page open or return later; Relia will keep checking until Creditcoin accepts the proof.</span></div>}
+      {!refusal && !transientFailure && complete[2] && !complete[5] && <div className="proof-status-callout pending" role="status"><strong>Proof is queued</strong><span>Attestation is not instant. This can take several minutes, so the judge path includes a completed proof while this live one catches up.</span></div>}
       {workerOnline === false && !complete[5] && <div className="proof-status-callout offline"><strong>The observer feed is unavailable</strong><span>Chain evidence remains public. A worker outage does not move funds or erase either Sepolia transaction.</span></div>}
 
       {(evidence.payTx || evidence.ackTx || evidence.creditcoinTx) && <div className="proof-status-evidence">

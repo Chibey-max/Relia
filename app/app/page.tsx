@@ -35,6 +35,7 @@ export default function LandingPage() {
         <div className="hero-action-block" data-hero-reveal>
           <div className="hero-actions">
             <Button href="/send">Send an installment <MaterialIcon name="arrow_forward" /></Button>
+            <Button variant="secondary" href="/judge">Judge demo</Button>
             <Link className="text-action" href="/verify">Verify a public receipt <MaterialIcon name="open_in_new" /></Link>
           </div>
           <p className="reading-note"><StatusIndicator tone="live" label="Reading is public. Writing needs a wallet." /></p>
@@ -113,7 +114,7 @@ export default function LandingPage() {
             <p>RPC and proof services may pause; confirmed chain records remain public.</p>
           </details>
         </div>
-        <small className="evidence-snapshot">Evidence snapshot · {PROJECT_EVIDENCE.verifiedOn}</small>
+        <small className="evidence-snapshot">Evidence snapshot: {PROJECT_EVIDENCE.verifiedOn}</small>
       </Section>
 
       <Section spacing="none" tone="transparent" composition="contained" className="faq-section landing-final landing-section-data" data-reveal data-reveal-group>
