@@ -25,7 +25,7 @@ const EXAMPLES: Array<{ mode: ExampleMode; label: string }> = [
 const MODE_COPY: Record<ExampleMode, { title: string; consequence: string }> = {
   progress: {
     title: 'Proof is being checked',
-    consequence: 'The payment and shop confirmation are secured; the title waits for the proof result.',
+    consequence: 'The source records are ready; the title awaits proof.',
   },
   complete: {
     title: 'The title advances',
@@ -38,10 +38,10 @@ const MODE_COPY: Record<ExampleMode, { title: string; consequence: string }> = {
 };
 
 const STEP_INSIGHTS = [
-  'The source transaction fixes the asset, slice, amount, buyer, and payer into one inspectable payment record.',
-  'The acknowledgement cites that exact payment transaction, so the shop cannot confirm a different installment.',
-  'The verification step rebuilds the expected relationship between both records and refuses incomplete evidence.',
-  'One accepted pair can fill one slice only. The resulting receipt remains public without moving the payment funds.',
+  'The transaction fixes the asset, slice, amount, buyer, and payer.',
+  'The acknowledgement cites that exact payment transaction.',
+  'Verification matches both records and refuses incomplete evidence.',
+  'One accepted pair fills one slice and creates one receipt.',
 ];
 
 const STATE_MEANING: Record<StepState, string> = {
@@ -91,7 +91,7 @@ export function ProcessJourney({ steps }: { steps: ProcessJourneyStep[] }) {
     <div className="process-journey" data-scroll-story="process">
       <div className="process-example-disclosure" data-scroll-item>
         <ExperienceMode>{DEMO_DISCLOSURE}</ExperienceMode>
-        <span>Controls below preview possible states; they do not query or change a contract.</span>
+        <span>Preview only. No contract reads or writes.</span>
       </div>
       <div className="process-example-toolbar" role="group" aria-label="Preview a process state" data-scroll-item>
         <span>Preview state</span>

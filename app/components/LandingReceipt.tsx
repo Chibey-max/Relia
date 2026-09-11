@@ -27,7 +27,7 @@ export function LandingReceipt() {
       data-scroll-story="receipt"
       aria-label="Illustrative installment receipt"
     >
-      <header className="receipt-verdict">
+      <header className="receipt-verdict" data-scroll-item>
         <div>
           <span className="mini-title">ILLUSTRATIVE RECEIPT | SAMPLE DATA</span>
           <ExperienceMode>{DEMO_DISCLOSURE}</ExperienceMode>
@@ -37,14 +37,14 @@ export function LandingReceipt() {
         <Stamp className="stamp"><MaterialIcon name="check" /> LIVE</Stamp>
       </header>
 
-      <div className="receipt-summary" role="group" aria-label="Sample receipt summary">
+      <div className="receipt-summary" role="group" aria-label="Sample receipt summary" data-scroll-item>
         <div><span>Asset</span><strong>{DEMO_RECEIPT.assetName}</strong></div>
         <div><span>Amount</span><strong>{DEMO_RECEIPT.amount}</strong></div>
         <div><span>Buyer</span><strong>{DEMO_RECEIPT.buyer}</strong></div>
       </div>
 
-      <div className="landing-receipt-inspector" role="group" aria-label="Inspect sample receipt evidence">
-        <details open>
+      <div className="landing-receipt-inspector" role="group" aria-label="Inspect sample receipt evidence" data-scroll-item>
+        <details>
           <summary>
             <span><strong>Payment evidence</strong><small>Sepolia source fact</small></span>
             <span className="receipt-inspector-plus" aria-hidden="true"><MaterialIcon name="add" /></span>
@@ -97,8 +97,8 @@ export function LandingReceipt() {
         </details>
       </div>
 
-      <footer className="receipt-final landing-receipt-footer">
-        <span>Sample only. Real receipts expose their source transactions for independent inspection.</span>
+      <footer className="receipt-final landing-receipt-footer" data-scroll-item>
+        <span>Sample only. Real receipts expose their source transactions.</span>
         <Link href="/verify">Verify a real receipt <MaterialIcon name="arrow_forward" /></Link>
       </footer>
     </Card>

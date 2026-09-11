@@ -85,6 +85,14 @@ export function WalletConnect() {
   }, []);
 
   async function onConnect() {
+    if (!getInjectedProvider()) {
+      setAccount(null);
+      setChainId(null);
+      setMessage('Install MetaMask, Rabby, or another browser wallet, then try again.');
+      setPhase('unsupported');
+      return;
+    }
+
     setPhase('opening');
     setMessage('');
     approvalTimerRef.current = window.setTimeout(() => setPhase('approval'), 650);
@@ -133,7 +141,8 @@ export function WalletConnect() {
   }
 
   const pending = phase === 'detecting' || phase === 'opening' || phase === 'approval' || phase === 'switching';
-  const buttonLabel = phase === 'detecting' ? 'Detecting wallet...' : phase === 'opening' ? 'Opening wallet...' : phase === 'approval' ? 'Waiting for approval...' : phase === 'switching' ? 'Switching network...' : phase === 'unsupported' ? 'Wallet unavailable' : phase === 'error' ? 'Try wallet again' : 'Connect wallet';
+  const buttonLabel = phase === 'detecting' ? 'Detecting wallet...' : phase === 'opening' ? 'Opening wallet...' : phase === 'approval' ? 'Waiting for approval...' : phase === 'switching' ? 'Switching network...' : phase === 'unsupported' ? 'Get wallet' : phase === 'error' ? 'Try wallet again' : 'Connect wallet';
+  const compactButtonLabel = phase === 'detecting' ? 'Detecting...' : phase === 'opening' ? 'Opening...' : phase === 'approval' ? 'Approve...' : phase === 'switching' ? 'Switching...' : phase === 'unsupported' ? 'Get wallet' : phase === 'error' ? 'Try again' : 'Connect';
 
   return (
     <div className={`wallet-widget ${isPublicRead ? 'wallet-widget-public' : 'wallet-widget-write'} ${wrongNetwork ? 'wallet-widget-wrong-network' : ''}`}>
@@ -156,8 +165,9 @@ export function WalletConnect() {
           </div>
         </details>
       ) : (
-        <button className="wallet-button" onClick={onConnect} disabled={pending} aria-busy={pending} data-state={phase} title={phase === 'unsupported' ? 'Install MetaMask, Rabby, or another browser wallet.' : undefined}>
-          {buttonLabel}
+        <button className="wallet-button" onClick={onConnect} disabled={pending} aria-busy={pending} data-state={phase} title={phase === 'unsupported' ? 'Install MetaMask, Rabby, or another browser wallet.' : undefined} aria-label={buttonLabel}>
+          <span className="wallet-label-wide">{buttonLabel}</span>
+          <span className="wallet-label-compact" aria-hidden="true">{compactButtonLabel}</span>
         </button>
       )}
       {message && <span className="wallet-message" role="alert">{message}</span>}

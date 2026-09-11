@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   cancelAnimations,
@@ -11,12 +11,13 @@ import {
   observeMotionActivity,
 } from '@/lib/interactionMotion';
 
-export function ClientMotion() {
+export function ClientMotion({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   useEffect(() => {
     let teardown = () => {};
-    // The layout can hydrate before a streamed page segment. Defer DOM
-    // decoration so motion attributes never race React's hydration pass.
+    // Streamed route segments can hydrate after this effect starts. Animate
+    // through WAAPI only; never decorate those nodes with attributes React
+    // owns, because that would create a hydration race.
     const startTimer = window.setTimeout(() => {
       const reduce = motionIsReduced();
       const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]:not([data-reveal-group])'));
@@ -62,7 +63,6 @@ export function ClientMotion() {
       };
 
       const revealGroup = (group: HTMLElement) => {
-        group.dataset.revealActive = 'true';
         const items = Array.from(group.querySelectorAll<HTMLElement>('[data-reveal-item]'));
         items.forEach((item, index) => {
           const isArtifact = item.dataset.revealItem === 'artifact';
@@ -82,7 +82,6 @@ export function ClientMotion() {
       };
 
       const activateStory = (story: HTMLElement) => {
-        story.dataset.scrollActive = 'true';
         const items = Array.from(story.querySelectorAll<HTMLElement>('[data-scroll-item]'));
         items.forEach((item, index) => {
           revealAnimations.push(item.animate(
@@ -110,8 +109,6 @@ export function ClientMotion() {
         stopScrollStories();
         stopAmbientMotion();
         cancelAnimations(revealAnimations);
-        revealGroups.forEach((group) => delete group.dataset.revealActive);
-        scrollStories.forEach((story) => delete story.dataset.scrollActive);
       };
     }, 100);
 
@@ -121,5 +118,5 @@ export function ClientMotion() {
     };
   }, [pathname]);
 
-  return null;
+  return children;
 }

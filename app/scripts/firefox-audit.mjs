@@ -74,7 +74,7 @@ try {
       noHorizontalOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
       headingVisible: Boolean(document.querySelector('main h1')),
       navigationPresent: Boolean(document.querySelector('.site-nav')),
-      sampleDisclosure: document.body.textContent.includes('Interactive example · sample data · no wallet'),
+      sampleDisclosure: document.body.textContent.includes('Interactive example | sample data | no wallet'),
     };`));
   }
 
