@@ -33,7 +33,7 @@ const STAGES: readonly HeroStage[] = [
     label: 'Shop check',
     icon: 'fact_check',
     title: 'Payment confirmed',
-    summary: 'The shop confirms the same installment.',
+    summary: 'Same payment confirmed.',
     result: 'Matched',
     explanation: 'The shop acknowledges the exact payment, giving both sides the same source record.',
     explanationTitle: 'The shop confirms the same fact',
@@ -42,7 +42,7 @@ const STAGES: readonly HeroStage[] = [
   {
     label: 'Proof accepted',
     title: 'Both records agree',
-    summary: 'Ready to update the title.',
+    summary: 'Title update ready.',
     result: 'Accepted',
     explanation: 'Relia verifies that the payment and acknowledgement belong together without moving the money.',
     explanationTitle: 'The two records are proven together',
@@ -51,24 +51,24 @@ const STAGES: readonly HeroStage[] = [
   {
     label: 'New title slice',
     title: '04 of 12',
-    summary: 'Owned, visible, and easy to check.',
-    explanation: 'The accepted proof fills the next title slice and creates a public receipt anyone can inspect.',
-    explanationTitle: 'The buyer receives durable progress',
+    summary: 'Owned and public.',
+    explanation: 'Accepted proof fills one title slice and creates a public receipt.',
+    explanationTitle: 'Durable progress',
     className: 'proof-title',
   },
 ];
 
-const SEQUENCE_DELAY = 720;
+const SEQUENCE_DELAY = 1500;
 
 export function HeroProof() {
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const timersRef = useRef<number[]>([]);
-  const autoPlayedRef = useRef(false);
   const [activeStage, setActiveStage] = useState(STAGES.length - 1);
   const [direction, setDirection] = useState<'forward' | 'backward'>('backward');
   const [advancing, setAdvancing] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [hasPlayed, setHasPlayed] = useState(false);
 
   const clearSequence = useCallback(() => {
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -77,7 +77,14 @@ export function HeroProof() {
 
   const playSequence = useCallback(() => {
     clearSequence();
-    autoPlayedRef.current = true;
+    setHasPlayed(true);
+    if (motionIsReduced()) {
+      setPlaying(false);
+      setAdvancing(false);
+      setDirection('forward');
+      setActiveStage(STAGES.length - 1);
+      return;
+    }
     setPlaying(true);
     setAdvancing(false);
     setDirection('backward');
@@ -97,13 +104,22 @@ export function HeroProof() {
 
   const selectStage = (index: number) => {
     if (index === activeStage && !playing) return;
-    autoPlayedRef.current = true;
     clearSequence();
+    setHasPlayed(true);
     const movesForward = index > activeStage;
     setDirection(movesForward ? 'forward' : 'backward');
     setAdvancing(movesForward);
     setPlaying(false);
     setActiveStage(index);
+  };
+
+  const handlePaperClick = (index: number) => {
+    const compact = window.matchMedia('(max-width: 680px)').matches;
+    if (compact && index === activeStage) {
+      selectStage((index + 1) % STAGES.length);
+      return;
+    }
+    selectStage(index);
   };
 
   const handleStageKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -129,7 +145,6 @@ export function HeroProof() {
 
     const enter = () => {
       root.dataset.entered = 'true';
-      if (!autoPlayedRef.current && !document.hidden) playSequence();
     };
 
     if (typeof IntersectionObserver === 'undefined') {
@@ -150,7 +165,7 @@ export function HeroProof() {
       delete root.dataset.motionReady;
       delete root.dataset.entered;
     };
-  }, [clearSequence, playSequence]);
+  }, [clearSequence]);
 
   const selected = STAGES[activeStage];
 
@@ -167,7 +182,7 @@ export function HeroProof() {
       data-hero-reveal
     >
       <h2 className="sr-only" id="hero-proof-title">How an installment becomes a new title slice</h2>
-      <p className="sr-only" id="hero-proof-instructions">Choose a stage with Tab or the arrow keys. Use Replay story to run the sequence again.</p>
+      <p className="sr-only" id="hero-proof-instructions">Choose a stage with Tab or the arrow keys. Use Play story to run the sequence. On compact screens, activating the displayed card moves to the next stage.</p>
       <div className="hero-proof-toolbar">
         <div className="hero-proof-mode">
           <ExperienceMode>{DEMO_DISCLOSURE}</ExperienceMode>
@@ -177,14 +192,28 @@ export function HeroProof() {
           className="hero-proof-replay"
           type="button"
           onClick={playSequence}
-          aria-label="Replay the payment-to-title story"
+          aria-label={`${hasPlayed ? 'Replay' : 'Play'} the payment-to-title story`}
           aria-busy={playing || undefined}
           data-playing={playing || undefined}
         >
-          <MaterialIcon name="replay" />{playing ? 'Playing...' : 'Replay story'}
+          <MaterialIcon name={hasPlayed ? 'replay' : 'play_arrow'} />{playing ? 'Playing...' : hasPlayed ? 'Replay story' : 'Play story'}
         </button>
       </div>
       <DrawnArrow className="drawn-arrow" />
+      <div className="hero-proof-mobile-tabs" role="group" aria-label="Choose a payment-to-title stage">
+        {STAGES.map((stage, index) => (
+          <button
+            type="button"
+            aria-label={`Stage ${index + 1}: ${stage.label}`}
+            aria-pressed={index === activeStage}
+            onClick={() => selectStage(index)}
+            key={stage.label}
+          >
+            <span>{index + 1}</span>
+            <small>{stage.label}</small>
+          </button>
+        ))}
+      </div>
       <ol className="hero-proof-flow" aria-label="Payment-to-title stages">
         {STAGES.map((stage, index) => {
           const state = index < activeStage ? 'complete' : index === activeStage ? 'active' : 'pending';
@@ -197,7 +226,8 @@ export function HeroProof() {
                 className={`proof-paper proof-stage ${stage.className}`}
                 aria-pressed={index === activeStage}
                 aria-describedby={index === activeStage ? 'hero-proof-explanation' : undefined}
-                onClick={() => selectStage(index)}
+                aria-label={`Stage ${index + 1}: ${stage.label}${index === activeStage ? '. Activate to move to the next stage on compact screens.' : ''}`}
+                onClick={() => handlePaperClick(index)}
                 onFocus={() => selectStage(index)}
                 onKeyDown={(event) => handleStageKeyDown(event, index)}
               >
@@ -220,7 +250,8 @@ export function HeroProof() {
           );
         })}
       </ol>
-      <div className="hero-proof-explanation" id="hero-proof-explanation">
+      <p className="hero-proof-tap-cue">Tap the card to see the next step.</p>
+      <div className="hero-proof-explanation" id="hero-proof-explanation" aria-live="polite" aria-atomic="true">
         <span className="mini-title">STEP {String(activeStage + 1).padStart(2, '0')}</span>
         <div>
           <strong>{selected.explanationTitle}</strong>

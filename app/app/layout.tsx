@@ -20,7 +20,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -34,21 +34,22 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             The public explanations remain readable, but live chain lookups and wallet actions need JavaScript in this prototype.
           </div>
         </noscript>
-        <ClientMotion />
-        <div className="app-shell">
-          <header className="site-header">
-            <div className="nav-pill">
-              <Link className="brand" href="/">
-                <span className="brand-mark">R</span>
-                <span className="brand-name">Relia</span>
-              </Link>
-              <SiteNav />
-              <WalletConnect />
-            </div>
-          </header>
-          <div id="main" tabIndex={-1}>{children}</div>
-          <AppFooter />
-        </div>
+        <ClientMotion>
+          <div className="app-shell">
+            <header className="site-header">
+              <div className="nav-pill">
+                <Link className="brand" href="/" aria-label="Relia home">
+                  <span className="brand-mark">R</span>
+                  <span className="brand-name">Relia</span>
+                </Link>
+                <SiteNav />
+                <WalletConnect />
+              </div>
+            </header>
+            <div id="main" tabIndex={-1}>{children}</div>
+            <AppFooter />
+          </div>
+        </ClientMotion>
       </body>
     </html>
   );

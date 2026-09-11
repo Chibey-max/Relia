@@ -14,6 +14,8 @@
     "c7:audit": "node scripts/c7-audit.mjs",
     "c8:audit": "node scripts/c8-audit.mjs",
     "c9:audit": "node scripts/c9-audit.mjs",
+    "i12:audit": "node scripts/i12-audit.mjs",
+    "i13:visual-audit": "node scripts/mobile-visual-audit.mjs",
     "firefox:audit": "node scripts/firefox-audit.mjs",
     "perf:audit": "node scripts/performance-audit.mjs",
     "start": "next start",

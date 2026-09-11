@@ -66,9 +66,11 @@ export function BrandMotion() {
     let resizeFrame = 0;
     let visibleInViewport = false;
     let removeKeyboardNudge = () => {};
+    let removeTapNudge = () => {};
     let removeMatterEvents = () => {};
     let lastDiscPaint = 0;
     let mouse: Matter.Mouse | null = null;
+    let tapTimer = 0;
 
     const syncDisc = (body: Matter.Body) => {
       const element = discRefs.current[body.plugin.discIndex as number];
@@ -113,7 +115,8 @@ export function BrandMotion() {
       const height = section.clientHeight;
       const size = width < 640 ? 64 : 76;
       const constrainedDevice = typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= 4;
-      const bodyCount = width < 640 || constrainedDevice ? 10 : DISC_COUNT;
+      const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+      const bodyCount = width < 420 ? 6 : width < 680 ? 8 : constrainedDevice ? 10 : DISC_COUNT;
       const floor = height - 36;
 
       discRefs.current.forEach((element, index) => {
@@ -146,12 +149,14 @@ export function BrandMotion() {
       });
       Composite.add(engine.world, bodies);
 
-      mouse = Mouse.create(canvas);
-      mouseConstraint = MouseConstraint.create(engine, {
-        mouse,
-        constraint: { stiffness: 0.2, render: { visible: false } },
-      });
-      Composite.add(engine.world, mouseConstraint);
+      if (!coarsePointer) {
+        mouse = Mouse.create(canvas);
+        mouseConstraint = MouseConstraint.create(engine, {
+          mouse,
+          constraint: { stiffness: 0.2, render: { visible: false } },
+        });
+        Composite.add(engine.world, mouseConstraint);
+      }
 
       const force = { x: 0, y: 0 };
       const attract = () => {
@@ -204,8 +209,27 @@ export function BrandMotion() {
         });
       };
 
+      const nudgeWithTap = (event: PointerEvent) => {
+        if (!coarsePointer || event.pointerType === 'mouse') return;
+        const rect = canvas.getBoundingClientRect();
+        const pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+        bodies.forEach((body, index) => {
+          const dx = body.position.x - pointer.x;
+          const dy = body.position.y - pointer.y;
+          const distance = Math.hypot(dx, dy) || 1;
+          const spread = index % 2 === 0 ? -0.0015 : 0.0015;
+          Body.applyForce(body, body.position, {
+            x: (dx / distance) * 0.008 + spread,
+            y: (dy / distance) * 0.008 - 0.003,
+          });
+        });
+        canvas.dataset.tapped = 'true';
+        window.clearTimeout(tapTimer);
+        tapTimer = window.setTimeout(() => { delete canvas.dataset.tapped; }, 180);
+      };
+
       Events.on(engine, 'beforeUpdate', attract);
-      Events.on(mouseConstraint, 'mousemove', repel);
+      if (mouseConstraint) Events.on(mouseConstraint, 'mousemove', repel);
       removeMatterEvents = () => {
         if (engine) Events.off(engine, 'beforeUpdate', attract);
         if (mouseConstraint) Events.off(mouseConstraint, 'mousemove', repel);
@@ -213,6 +237,10 @@ export function BrandMotion() {
       };
       canvas.addEventListener('keydown', nudgeWithKeyboard);
       removeKeyboardNudge = () => canvas.removeEventListener('keydown', nudgeWithKeyboard);
+      if (coarsePointer) {
+        canvas.addEventListener('pointerup', nudgeWithTap);
+        removeTapNudge = () => canvas.removeEventListener('pointerup', nudgeWithTap);
+      }
       bodies.forEach(syncDisc);
       active = true;
       Runner.run(runner, engine);
@@ -254,6 +282,8 @@ export function BrandMotion() {
       cancelAnimationFrame(resizeFrame);
       if (runner) Runner.stop(runner);
       removeMatterEvents();
+      removeTapNudge();
+      window.clearTimeout(tapTimer);
       if (engine) Engine.clear(engine);
       removeKeyboardNudge();
       delete section.dataset.physics;
@@ -291,7 +321,7 @@ export function BrandMotion() {
       </svg>
 
       <h2 id="brand-motion-heading" className="brand-motion-sr-only">Relia, title proven</h2>
-      <p id="brand-motion-instructions" className="brand-motion-sr-only">A playful field of title-state tokens. Drag with a pointer, or focus the field and use the arrow, Enter, or Space keys to nudge the tokens.</p>
+      <p id="brand-motion-instructions" className="brand-motion-sr-only">Title-state tokens. Tap on a touch screen, drag with a pointer, or use arrow, Enter, or Space keys.</p>
       <div className="brand-motion-lockup" aria-hidden="true">
         <div className="brand-motion-word">
           {'relia'.split('').map((letter, index) => (

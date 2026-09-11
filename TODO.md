@@ -897,6 +897,246 @@ Local production validation snapshot (2026-09-07):
 - Chromium reported no console messages, runtime exceptions, unhandled rejections, or hydration warnings.
 - Re-run with `npm run interaction:audit -- <url>`, `npm run firefox:audit -- <url>`, and `npm run perf:audit -- <url> --throttled`.
 
+### Phase I12 — Landing-page content density and mobile rhythm
+
+Reduce the cumulative reading burden without removing Relia's colorful, playful, hand-drawn character or weakening the product's trust story. The problem is repeated explanation across sections, not long individual paragraphs. Let interaction, artifacts, and confirmed state carry more of the meaning.
+
+#### Guiding constraints
+
+- [x] Preserve the hero promise, interactive proof demonstration, public receipt, live-status honesty, and primary paths to Send and Verify.
+- [x] Keep essential risk, signer, network, and non-custodial information visible at the point where it affects a decision.
+- [x] Do not hide required instructions or transaction consequences merely to shorten the page.
+- [x] Keep technical evidence accessible through progressive disclosure and canonical detail routes.
+- [x] Preserve meaningful headings and landmarks for screen-reader and keyboard navigation.
+- [x] Preserve deterministic server/client markup, reduced-motion behavior, and no-JavaScript comprehension.
+- [x] Do not replace useful copy with unexplained decorative motion.
+- [x] Reuse the existing design tokens, illustrations, state system, and interaction language from `design.md`.
+
+#### Composition reduction
+
+- [x] Reduce the landing page's visible copy by approximately 30–40% while preserving its complete core argument.
+- [x] Recompose the current hero plus eight numbered sections into six focused narrative beats:
+  - [x] Hero and interactive proof demonstration
+  - [x] Private-notebook versus public-record comparison
+  - [x] Four-step payment-to-title mechanism
+  - [x] Inspectable public receipt
+  - [x] Combined trust, live evidence, and honest status
+  - [x] Compact FAQ and final CTA
+- [x] Keep one primary idea and one dominant action within each mobile viewport where practical.
+- [x] Remove repeated explanations that payments stay on Sepolia while only proof travels; state this once prominently and reference it concisely elsewhere.
+- [x] Merge “The Problem” and “Designed for the Hard Cases” into one coherent trust narrative.
+- [x] Keep “Payment to Title” as the human explanation and move “Under the Hood” details into its expandable technical drawer.
+- [x] Merge “Public Evidence” and “Honest Status” into one compact, live-aware evidence strip.
+- [x] Keep the physics-based brand moment as a visual pause, but verify it does not interrupt the core reading sequence.
+- [x] Shorten the final CTA so it closes the story without restating the hero.
+
+#### Mobile presentation
+
+- [x] Recompose desktop grids for mobile instead of stacking every desktop block into one long column.
+- [x] Replace the overflowing two-row mobile header with a contained one-row header and an accessible navigation sheet.
+- [x] Make the hero kicker and highlighted promise wrap inside the viewport at 320px and 390px.
+- [x] Present one active hero-proof artifact at a time behind a four-step touch selector on compact screens.
+- [x] Reduce the mobile brand-motion stage so it remains a visual pause instead of a screen-height interruption.
+- [x] Use full-width primary actions and maintain touch targets of at least 44px.
+- [x] Convert optional metadata and technical explanations into accessible disclosure panels.
+- [x] Use horizontal scrolling only for optional, clearly signposted content such as the 12-slice title rail; never for required reading.
+- [x] Reduce nested card-within-card presentation by using spacing, background shifts, and typography for hierarchy.
+- [x] Keep body-copy lines readable and prevent headings from producing awkward single-word wraps at 320px and 390px.
+- [x] Keep the active product state, artifact, or demonstration visually dominant over its supporting copy.
+- [x] Ensure compact layouts leave sufficient breathing room between narrative beats without creating empty, screen-height gaps.
+
+#### Content and evidence accuracy
+
+- [x] Update the landing-page contract-test count from 46 to the current verified total of 56.
+- [x] Derive changing evidence counts from one shared source or clearly label them as a dated snapshot to prevent future drift.
+- [x] Replace generic trust claims with verifiable states, transaction evidence, or plain-language contract guarantees.
+- [x] Keep sample and live records unmistakably distinct.
+- [x] Use user goals—Pay, Acknowledge, Verify, Claim title—as primary language; keep contract names in technical detail views.
+- [x] Confirm every remaining sentence adds new information, supports a decision, or explains the adjacent interaction.
+
+#### Validation
+
+- [x] Compare visible word count, section count, and mobile page height before and after the revision.
+- [ ] Confirm a first-time reader can explain Relia's payment-to-title mechanism after viewing the hero and first three narrative beats.
+- [x] Confirm Send and Verify remain discoverable without opening any disclosure.
+- [x] Test the revised page at 320px, 390px, 768px, 1024px, and 1440px.
+- [x] Test enlarged text and 200% zoom without clipping, overlap, or horizontal page overflow.
+- [x] Test keyboard, touch, reduced-motion, and JavaScript-disabled variants.
+- [x] Verify heading order, landmarks, disclosure names, focus visibility, and reading order.
+- [x] Confirm no hydration warnings, layout shifts, stale hidden content, or interaction regressions.
+- [x] Audit visible element bounds so `overflow-x: clip` cannot conceal a containment failure.
+- [x] Run the interaction, Firefox, performance, TypeScript, and optimized production-build gates.
+
+Verified 2026-09-10: at 390px the initial visible copy fell from 1,050 to 700 words (33.3%) and page height fell from 11,920px to 8,357px (29.9%). The landing page now has six narrative beats, six visible secondary headings, retained Send and Verify paths, explicit visible-element containment across the required widths, and no hydration errors. The compact header, wrapping hero treatment, single-stage proof selector, and shorter brand-motion pause passed the optimized Chromium interaction audit. Firefox, reduced-motion, enlarged-text, 200%-zoom, no-JavaScript, and throttled production performance checks remain covered by the broader phase validation. A real first-reader comprehension study remains intentionally open.
+
+### Phase I13 — Mobile experience quality: 8–9/10
+
+Turn the technically responsive landing page into a deliberately composed mobile experience. Preserve Relia's colorful, playful, hand-drawn identity while reducing repetition, visual competition, interaction ambiguity, and responsive CSS fragility.
+
+#### Guiding constraints
+
+- [ ] Preserve the hero promise, Send and Verify paths, public receipt, honest testnet status, and non-custodial explanation.
+- [ ] Preserve complete keyboard, screen-reader, reduced-motion, enlarged-text, and no-JavaScript experiences.
+- [ ] Keep sample records unmistakably distinct from live chain evidence.
+- [ ] Do not hide transaction consequences, signer requirements, network requirements, or recovery guidance to reduce page length.
+- [ ] Keep the existing color system, paper metaphors, tactile outlines, and hand-drawn accents, but concentrate them around meaningful actions and artifacts.
+- [ ] Prefer mobile-specific composition over shrinking or stacking desktop layouts.
+- [ ] Keep deterministic server/client markup and do not reintroduce hydration-sensitive DOM decoration.
+
+#### I13.1 — Responsive foundation and CSS consolidation
+
+- [x] Inventory every active landing-page and navigation rule at the 860px, 820px, 760px, 640px, 560px, and 420px breakpoints.
+- [x] Remove superseded phase-specific declarations and resolve conflicting cascade ownership.
+- [x] Establish one compact navigation breakpoint and one primary landing-page compact breakpoint.
+- [x] Use container queries where behavior depends on component width rather than viewport width.
+- [x] Standardize compact-screen page gutters at 16px, with safe-area additions where required.
+- [x] Ensure all grid and flex children that contain copy, hashes, or controls use `min-width: 0` and bounded inline sizing.
+- [x] Add `scroll-padding-top` and appropriate `scroll-margin-top` values for the sticky header, headings, errors, and focus targets.
+- [x] Preserve the visible-element bounding-box audit so `overflow-x: clip` cannot conceal containment failures.
+
+#### I13.2 — Mobile header and navigation
+
+- [x] Give the Relia brand link a minimum 44px touch area without visually enlarging the mark.
+- [x] Keep the hamburger as an icon-only 44px control with a clear accessible name.
+- [x] Replace ambiguous compact wallet copy:
+  - [x] Show `Connect` when an injected wallet is available.
+  - [x] Show `Get wallet` or equivalent recovery language when no provider is available.
+  - [x] Keep unavailable, loading, error, and connected states visually distinct.
+- [x] Replace duplicated desktop/mobile navigation markup with one canonical route source and one controlled responsive presentation.
+- [x] Expose accurate expanded/collapsed state to assistive technology.
+- [x] Close the mobile menu on route selection, outside interaction, and Escape.
+- [x] Return focus to the hamburger when the menu closes.
+- [x] Confirm the menu never obscures its trigger, a focused control, or an inline error.
+- [x] Keep the complete mobile header approximately 60–64px tall, excluding device safe areas.
+
+Verified 2026-09-10: I13.1 and I13.2 now have one canonical route tree, one 680px compact-navigation/landing ownership layer, safe-area-aware 16px gutters, sticky-header scroll offsets, bounded navigation and wallet content, and explicit provider-recovery copy. The Chromium audit covers 320px through 1440px, visible-element containment, 44px brand and menu targets, 60–64px compact header height, expanded state, panel clearance, Escape focus return, outside dismissal, route-selection dismissal, wallet recovery language, enlarged text, 200% zoom, reduced motion, no JavaScript, hydration, and runtime errors.
+
+#### I13.3 — Hero hierarchy and first viewport
+
+- [x] Raise the hero kicker and public-reading note to at least 11–12px where they communicate useful information.
+- [x] Tune the compact hero heading to approximately 35–36px at 375–390px without awkward single-word wraps.
+- [x] Reduce the yellow highlight's border and shadow weight on compact screens while preserving the hand-marked emphasis.
+- [x] Tighten spacing between supporting copy, primary CTA, secondary action, and proof preview.
+- [x] Keep `Send an installment` as the only dominant hero action.
+- [x] Keep Verify visible as a quieter secondary path.
+- [x] Show a meaningful portion of the proof artifact within the first viewport on common 667px and 844px device heights.
+- [x] Confirm the first viewport contains one promise, one primary action, and one visible product consequence.
+
+#### I13.4 — Mobile proof interaction
+
+- [x] Remove automatic playback or slow it to approximately 1,400–1,800ms per stage so each state can be read.
+- [x] Prefer an explicit `Play story` control over unsolicited state changes.
+- [x] Stop playback immediately when the user selects a stage.
+- [x] Keep four stage selectors with touch areas of at least 44px.
+- [x] Increase visible stage labels from 8px to at least 11px.
+- [x] Give every selector a concise accessible name and clear selected styling using more than color alone.
+- [x] Make the displayed proof artifact non-interactive on mobile unless tapping it intentionally advances the story.
+- [x] If card tapping advances the story, communicate that behavior and announce the resulting stage.
+- [x] Animate the evidence that changes rather than moving the complete card unnecessarily.
+- [x] Keep a complete, stable final state for reduced-motion and no-JavaScript users.
+
+Verified 2026-09-10: I13.3 and I13.4 now use a 35–36px compact hero heading, 11px essential labels, a lighter hand-marked highlight, tighter action rhythm, and a short-screen composition that exposes the active title artifact at 390×667. The proof initializes to its complete final state without autoplay, runs only from an explicit `Play story` control at 1,500ms per stage, cancels immediately on direct selection, advances one step when the displayed compact card is activated, and announces its updated explanation politely. The Chromium matrix passed at 320–1440px with short-viewport, touch-target, selected-state, keyboard, reduced-motion, no-JavaScript, hydration, containment, and CLS assertions all green.
+
+#### I13.5 — Narrative reduction and page composition
+
+- [x] Keep the hero proof as the primary payment-to-title explanation.
+- [x] Convert the later four-step process section into a compact optional technical disclosure.
+- [x] Remove repeated explanations already communicated by the hero interaction.
+- [x] Recompose the private-note/public-record comparison into one bounded two-state frame with explicit controls.
+- [x] Keep the comparison understandable without animation or interaction.
+- [x] Integrate the hard-case outcomes into the comparison rather than presenting another large card cluster.
+- [x] State prominently once that payment funds remain on Sepolia; use concise references elsewhere.
+- [x] Move contract names, source mechanics, and secondary implementation details into accessible disclosures.
+- [x] Reduce initially visible mobile copy from approximately 700 words to 525–575 words.
+- [x] Reduce 390px page height from approximately 8,357px to 6,500–7,000px without removing required trust information.
+
+#### I13.6 — Surface hierarchy and card reduction
+
+- [x] Reserve hard borders and offset shadows for the primary CTA, active proof artifact, public receipt, and final conversion panel.
+- [x] Use flatter borders or background shifts for stage selectors, status rows, FAQ items, and technical disclosures.
+- [x] Remove unnecessary card-within-card structures.
+- [x] Ensure each remaining card has one responsibility and one dominant information level.
+- [x] Use spacing and typography before adding another border or shadow.
+- [x] Keep pink, yellow, and green attached to consistent editorial, attention, and live-state meanings.
+- [x] Confirm that decorative surfaces never compete visually with transaction or verification controls.
+
+Verified 2026-09-10: I13.5 and I13.6 reduce the initially visible 390px landing page from 700 to 574 words and from 8,357px to 6,016px—shorter than the estimated height target without removing the public receipt, testnet status, non-custodial explanation, Send/Verify paths, or hard-case outcomes. The hero proof is now the sole initially expanded four-step explanation; the detailed process is an accessible optional walkthrough. One bounded private/public comparison replaces the previous ledger plus card cluster, includes explicit mobile controls, integrates silent-shop and refused-proof outcomes, and retains a no-JavaScript summary. Secondary surfaces use flat one-pixel structure and inset selection marks, while tactile borders and shadows remain concentrated on consequential actions and evidence. Density and Chromium interaction audits passed with no overflow, hydration warnings, runtime errors, stuck content, or meaningful CLS across 320–1440px.
+
+#### I13.7 — Mobile typography and scanability
+
+- [x] Use 11–12px as the minimum for essential metadata and technical labels.
+- [x] Use at least 12px for interactive labels.
+- [x] Keep supporting body copy near 15–16px with comfortable line height.
+- [x] Keep major mobile section headings near 28–32px unless a deliberate display treatment justifies otherwise.
+- [x] Reduce uppercase tracking on labels below 12px.
+- [x] Keep body-copy lines near 35–45 characters where practical.
+- [x] Left-align explanations longer than two lines; reserve centered copy mainly for the hero and final CTA.
+- [x] Test long wallet states, localized labels, contract errors, hashes, and enlarged text without clipping.
+
+#### I13.8 — Mobile motion and touch behavior
+
+- [x] Prevent the brand-motion canvas from consuming vertical page gestures on coarse pointers.
+- [x] Use `touch-action: pan-y`, a touch-safe alternative, or disable drag physics on touch devices.
+- [x] Prefer simple tap reactions over precision dragging on phones.
+- [x] Stop the continuous ticker on compact screens when the physics field is active.
+- [x] Reduce the number of physics tokens on constrained devices.
+- [x] Keep the brand-motion section approximately 280–320px tall.
+- [x] Pause optional animation when its section leaves the viewport or the document becomes hidden.
+- [x] Keep pressed feedback immediate and restrained, without shifting surrounding layout.
+- [x] Confirm all interaction remains understandable when motion is disabled or fails to initialize.
+
+Verified 2026-09-10: I13.7 and I13.8 establish 11px essential metadata, 12px interactive controls, 15–16px supporting copy, 28–32px section headings, reduced tracking, readable measures, and left-aligned long explanations on compact screens. Long wallet and comparison labels, hashes, 200% zoom, and enlarged text remain contained without horizontal overflow. The 300px brand-motion field now preserves vertical scrolling with `touch-action: pan-y`, disables precision drag capture on coarse pointers, provides a restrained tap nudge, limits compact devices to six or eight tokens, stops the competing ticker, and pauses outside the viewport or while the document is hidden. Reduced-motion, Save-Data, no-JavaScript, and failed-initialization fallbacks retain understandable content. The density audit passes at 566 initially visible mobile words and 5,993px page height; typechecking and the optimized production build pass.
+
+#### I13.9 — Evidence, status, and final conversion
+
+- [ ] Replace the cramped three-column compact evidence row with one principal statistic and two supporting facts.
+- [ ] Raise evidence labels to at least 11px and preserve the dated snapshot label.
+- [ ] Continue expressing status with text and symbols as well as color.
+- [ ] Keep current testnet limitations visible without giving them equal weight to the main product promise.
+- [ ] Move raw hashes, addresses, and network implementation detail into expandable or canonical detail views.
+- [ ] Keep the FAQ compact and reveal only one answer at a time if testing shows cumulative expansion is distracting.
+- [ ] Keep the final CTA short and avoid restating the complete hero argument.
+
+#### I13.10 — Validation and first-reader testing
+
+- [ ] Capture and review full-page and first-viewport renders at 320px, 375px, 390px, and 430px.
+- [ ] Test at common short and tall viewport heights, including approximately 667px and 844px.
+- [ ] Test a physical iPhone and Android device in addition to emulation.
+- [ ] Test Safari/iOS Safari and Chrome/Android.
+- [ ] Test slow network, CPU throttling, Save-Data, and a constrained device profile.
+- [ ] Test 200% zoom and enlarged text without clipping, overlap, or loss of function.
+- [ ] Test keyboard order, visible focus, menu dismissal, focus return, and sticky-header obstruction.
+- [ ] Test representative screen-reader navigation and announcements.
+- [ ] Confirm every important touch target is at least 44px and has sufficient separation.
+- [ ] Confirm no page-level or visually clipped horizontal overflow at 320px.
+- [ ] Confirm production CLS stays below `0.05` at the required viewport widths.
+- [ ] Confirm no hydration warnings, runtime exceptions, unhandled rejections, or content stuck in an animated state.
+- [ ] Keep landing First Load JS at or below the design-system budget unless a measured product requirement documents the exception.
+- [ ] Run the interaction, Firefox, performance, TypeScript, and isolated optimized-build gates.
+- [ ] Conduct a five-person first-reader study and ask each participant:
+  - [ ] What does Relia do?
+  - [ ] Where does the payment money remain?
+  - [ ] What does the public receipt prove?
+  - [ ] What happens if the shop does not acknowledge payment?
+  - [ ] What would you tap first?
+- [ ] Confirm at least four of five first-time readers can explain the core payment-to-title journey without opening technical disclosures.
+
+#### Phase I13 acceptance criteria
+
+- [ ] No clipping or horizontal scrolling at 320px.
+- [ ] All important controls and navigation targets are at least 44px.
+- [ ] No essential text is smaller than 11px.
+- [ ] Initially visible mobile copy is approximately 525–575 words.
+- [ ] The 390px landing page is approximately 6,500–7,000px tall.
+- [ ] Each narrative beat has one dominant idea and no more than one dominant interaction.
+- [ ] The four-step payment-to-title explanation is not duplicated.
+- [ ] No decorative region traps vertical touch scrolling.
+- [ ] No uncontrolled autoplay changes readable content.
+- [ ] Production CLS remains below `0.05` across the required viewport matrix.
+- [ ] Navigation has complete open, close, dismissal, focus, and route-change behavior.
+- [ ] The landing page passes hydration, accessibility, responsive, interaction, reduced-motion, no-JavaScript, and performance checks.
+- [ ] Safari, physical-device, and first-reader results are documented.
+
 ### Interactivity delivery sequence
 
 - [x] **Interactivity milestone 1:** Architecture, state model, and deterministic reveal utilities
@@ -905,3 +1145,7 @@ Local production validation snapshot (2026-09-07):
 - [x] **Interactivity milestone 4:** Tactile controls, hand-drawn responses, and compact-screen adaptation
 - [ ] **Interactivity milestone 5:** Accessibility, performance profiling, failure modes, and cross-browser QA
   - Automated Chromium/Firefox-style interaction, responsive, reduced-motion, no-JavaScript, and failure-mode checks are done. Still open: Safari/iOS Safari and hands-on screen-reader navigation.
+- [x] **Interactivity milestone 6:** Landing-page content-density reduction and mobile narrative recomposition
+  - Implementation and automated validation are complete; the first-reader comprehension study remains open.
+- [ ] **Interactivity milestone 7:** Mobile experience quality and 8–9/10 refinement
+  - Complete Phase I13, including the responsive CSS consolidation, mobile-first content recomposition, touch-safe motion, physical-device coverage, and first-reader study.
