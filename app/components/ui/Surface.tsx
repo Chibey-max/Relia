@@ -42,7 +42,7 @@ export function Button({
   busyLabel,
   ...props
 }: ButtonProps) {
-  const content = <>{busy && <span className="button-progress-mark" aria-hidden="true" data-motion-loop />}<span>{busy ? busyLabel ?? 'Working...' : children}</span></>;
+  const content = <>{busy && <span className="button-progress-mark" aria-hidden="true" data-motion-loop data-motion-active="false" />}<span>{busy ? busyLabel ?? 'Working...' : children}</span></>;
   const buttonClass = classes('button', 'ui-button', `ui-button-${variant}`, `ui-button-${size}`, className);
 
   if ('href' in props && props.href) {

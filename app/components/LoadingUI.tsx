@@ -6,7 +6,7 @@ import { Container, Stack } from '@/components/ui/Layout';
 export function ProofPath({ active = 0 }: { active?: number }) {
   const steps = ['Payment', 'Acknowledgement', 'Proof', 'Title'];
   return (
-    <div className="loading-proof-path" aria-hidden="true" data-motion-loop>
+    <div className="loading-proof-path" aria-hidden="true" data-motion-loop data-motion-active="false">
       {steps.map((step, index) => (
         <div className={index === active ? 'is-active' : index < active ? 'is-done' : ''} key={step}>
           <i>{index < active ? <MaterialIcon name="check" /> : String(index + 1).padStart(2, '0')}</i>
@@ -35,7 +35,7 @@ export function LoadingMessage({
 }
 
 function SkeletonLine({ width = '100%' }: { width?: string }) {
-  return <span className="skeleton-line" style={{ width }} data-motion-loop />;
+  return <span className="skeleton-line" style={{ width }} data-motion-loop data-motion-active="false" />;
 }
 
 export function PanelSkeleton({ rows = 4 }: { rows?: number; label?: string }) {
@@ -81,7 +81,7 @@ export function LoadingButton({
 export function ProgressStatus({ label, detail }: { label: string; detail?: string }) {
   return (
     <div className="transaction-progress" role="status" aria-live="polite" aria-atomic="true">
-      <span className="transaction-progress-mark" aria-hidden="true" data-motion-loop />
+      <span className="transaction-progress-mark" aria-hidden="true" data-motion-loop data-motion-active="false" />
       <div><strong>{label}</strong>{detail && <small>{detail}</small>}</div>
     </div>
   );
@@ -90,7 +90,7 @@ export function ProgressStatus({ label, detail }: { label: string; detail?: stri
 export function ReceiptSkeleton({ paymentHash }: { paymentHash?: string }) {
   return (
     <div className="receipt-skeleton" aria-hidden="true">
-      <div className="receipt-skeleton-verdict"><span className="skeleton-orb" data-motion-loop /><div><SkeletonLine width="132px" /><SkeletonLine width="260px" /></div></div>
+      <div className="receipt-skeleton-verdict"><span className="skeleton-orb" data-motion-loop data-motion-active="false" /><div><SkeletonLine width="132px" /><SkeletonLine width="260px" /></div></div>
       {paymentHash && <code>{paymentHash}</code>}
       <div className="receipt-skeleton-summary"><PanelSkeleton rows={1} /><PanelSkeleton rows={1} /><PanelSkeleton rows={1} /></div>
       <div className="receipt-skeleton-facts"><PanelSkeleton rows={2} /><PanelSkeleton rows={2} /></div>
@@ -103,7 +103,7 @@ export function TitleSkeleton() {
   return (
     <div className="title-skeleton" aria-hidden="true">
       {Array.from({ length: 12 }, (_, index) => (
-        <div className="slice-skeleton" data-motion-loop key={index}><span>{String(index + 1).padStart(2, '0')}</span><SkeletonLine width="58%" /><SkeletonLine width="36%" /></div>
+        <div className="slice-skeleton" data-motion-loop data-motion-active="false" key={index}><span>{String(index + 1).padStart(2, '0')}</span><SkeletonLine width="58%" /><SkeletonLine width="36%" /></div>
       ))}
     </div>
   );

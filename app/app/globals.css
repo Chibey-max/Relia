@@ -6555,3 +6555,7 @@ html {
     background: rgba(255, 255, 255, 0.08);
   }
 }
+
+/* Bound the icon box: a pending or failed icon font can then neither reflow
+   surrounding text nor paint its ligature name ("arrow_forward"). */
+.material-symbols-rounded { width: 1em; overflow: hidden; }

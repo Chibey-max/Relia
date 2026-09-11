@@ -21,7 +21,7 @@ const REFUSALS = [
  */
 export function TitleTrack() {
   return (
-    <section className="title-track" aria-labelledby="title-track-heading" data-motion-loop>
+    <section className="title-track" aria-labelledby="title-track-heading" data-motion-loop data-motion-active="false">
       <div className="title-track-head">
         <span className="section-index section-index-light">THE RULE, VISUALIZED</span>
         <h2 id="title-track-heading">Twelve proven slices. Then the title is yours.</h2>
